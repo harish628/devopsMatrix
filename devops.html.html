@@ -1,0 +1,1242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AWS DevOps · Command Center · Skills Matrix 2026–2030</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800;14..32,900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --bg-deep: #030812;
+      --bg-panel: rgba(8, 18, 38, 0.75);
+      --bg-panel-solid: #0a1428;
+      --border-glow: rgba(60, 140, 255, 0.25);
+      --border-subtle: rgba(80, 140, 255, 0.12);
+      --accent-blue: #3d8aff;
+      --accent-cyan: #22d3ee;
+      --accent-purple: #a78bfa;
+      --accent-green: #34d399;
+      --accent-orange: #fb923c;
+      --text-primary: #eef4ff;
+      --text-secondary: #9bb5da;
+      --text-muted: #6a8aad;
+      --font-display: 'Space Grotesk', 'Inter', sans-serif;
+      --font-body: 'Inter', sans-serif;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: var(--font-body);
+      background: var(--bg-deep);
+      color: var(--text-primary);
+      line-height: 1.6;
+      padding: 2rem 1.5rem 3rem;
+      min-height: 100vh;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* ===== ANIMATED BACKGROUND ===== */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: 
+        radial-gradient(ellipse 80% 60% at 20% 0%, rgba(30, 90, 220, 0.18) 0%, transparent 55%),
+        radial-gradient(ellipse 70% 50% at 85% 100%, rgba(120, 60, 240, 0.14) 0%, transparent 55%),
+        radial-gradient(ellipse 60% 40% at 50% 50%, rgba(0, 200, 255, 0.05) 0%, transparent 60%);
+      pointer-events: none;
+      z-index: 0;
+      animation: bgShift 18s ease-in-out infinite alternate;
+    }
+
+    @keyframes bgShift {
+      0% { opacity: 0.9; transform: scale(1); }
+      100% { opacity: 1; transform: scale(1.08); }
+    }
+
+    /* Grid lines */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: 
+        linear-gradient(rgba(80, 150, 255, 0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(80, 150, 255, 0.035) 1px, transparent 1px);
+      background-size: 60px 60px;
+      pointer-events: none;
+      z-index: 0;
+      mask-image: radial-gradient(ellipse 70% 70% at 50% 50%, black 30%, transparent 80%);
+      -webkit-mask-image: radial-gradient(ellipse 70% 70% at 50% 50%, black 30%, transparent 80%);
+    }
+
+    .container {
+      max-width: 1440px;
+      margin: 0 auto;
+      position: relative;
+      z-index: 2;
+    }
+
+    /* ===== TOP BAR ===== */
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.7rem 1.5rem;
+      background: rgba(10, 22, 45, 0.6);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--border-subtle);
+      border-radius: 60px;
+      margin-bottom: 2.5rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.7rem;
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 1rem;
+      letter-spacing: -0.01em;
+    }
+
+    .brand-icon {
+      width: 32px;
+      height: 32px;
+      background: linear-gradient(135deg, #3d8aff, #a78bfa);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.9rem;
+      box-shadow: 0 0 20px rgba(60, 140, 255, 0.5);
+    }
+
+    .topbar-right {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .status-dot {
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      background: var(--accent-green);
+      border-radius: 50%;
+      margin-right: 0.4rem;
+      box-shadow: 0 0 10px var(--accent-green);
+      animation: pulseDot 1.5s infinite;
+    }
+
+    @keyframes pulseDot {
+      0%, 100% { opacity: 0.6; transform: scale(0.9); }
+      50% { opacity: 1; transform: scale(1.2); }
+    }
+
+    /* ===== HERO ===== */
+    .hero {
+      text-align: center;
+      margin-bottom: 3rem;
+      position: relative;
+    }
+
+    .hero-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: rgba(60, 140, 255, 0.1);
+      border: 1px solid rgba(60, 140, 255, 0.25);
+      padding: 0.4rem 1.2rem;
+      border-radius: 40px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #7ab8ff;
+      margin-bottom: 1.5rem;
+    }
+
+    .hero-eyebrow i { color: var(--accent-cyan); }
+
+    .hero h1 {
+      font-family: var(--font-display);
+      font-size: clamp(2.2rem, 5vw, 3.8rem);
+      font-weight: 700;
+      line-height: 1.1;
+      letter-spacing: -0.03em;
+      margin-bottom: 1rem;
+      background: linear-gradient(135deg, #ffffff 0%, #b8d4ff 45%, #a78bfa 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      background-size: 200% 200%;
+      animation: gradientShift 6s ease infinite;
+    }
+
+    @keyframes gradientShift {
+      0%, 100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+    }
+
+    .hero p {
+      font-size: 1.15rem;
+      color: var(--text-secondary);
+      max-width: 720px;
+      margin: 0 auto 2.5rem;
+      line-height: 1.7;
+    }
+
+    .hero-stats {
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .hero-stat {
+      background: rgba(12, 25, 50, 0.6);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--border-subtle);
+      border-radius: 24px;
+      padding: 1.2rem 2rem;
+      min-width: 150px;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero-stat::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(120, 180, 255, 0.6), transparent);
+    }
+
+    .hero-stat:hover {
+      border-color: rgba(100, 180, 255, 0.4);
+      transform: translateY(-4px);
+      box-shadow: 0 20px 40px -12px rgba(0, 80, 220, 0.4);
+    }
+
+    .hero-stat .num {
+      font-family: var(--font-display);
+      font-size: 2rem;
+      font-weight: 700;
+      background: linear-gradient(to right, #7ab8ff, #a78bfa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      line-height: 1.1;
+    }
+
+    .hero-stat .lbl {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      font-weight: 600;
+      margin-top: 0.2rem;
+    }
+
+    /* ===== SECTION HEADER ===== */
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.8rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .section-header h2 {
+      font-family: var(--font-display);
+      font-size: 1.6rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+    }
+
+    .section-header h2 i {
+      color: var(--accent-blue);
+      font-size: 1.3rem;
+      filter: drop-shadow(0 0 8px rgba(60, 140, 255, 0.6));
+    }
+
+    .section-header .legend {
+      display: flex;
+      gap: 1.2rem;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .legend-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 2px;
+    }
+
+    .legend-dot.skills { background: #6aabff; box-shadow: 0 0 8px #6aabff; }
+    .legend-dot.aws { background: #fb923c; box-shadow: 0 0 8px #fb923c; }
+    .legend-dot.why { background: #34d399; box-shadow: 0 0 8px #34d399; }
+
+    /* ===== SKILL CARDS GRID ===== */
+    .skills-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 3rem;
+    }
+
+    .skill-card {
+      background: var(--bg-panel);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--border-subtle);
+      border-radius: 28px;
+      padding: 1.8rem 1.6rem;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.4s cubic-bezier(0.2, 0.9, 0.3, 1);
+      cursor: default;
+      display: flex;
+      flex-direction: column;
+      gap: 1.2rem;
+    }
+
+    .skill-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, transparent, var(--card-accent, #3d8aff), transparent);
+      opacity: 0.6;
+      transition: opacity 0.3s;
+    }
+
+    .skill-card::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 28px;
+      padding: 1px;
+      background: linear-gradient(135deg, rgba(100, 180, 255, 0.3), transparent 50%, rgba(160, 100, 255, 0.15));
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.4s;
+    }
+
+    .skill-card:hover {
+      transform: translateY(-8px);
+      border-color: rgba(100, 180, 255, 0.35);
+      box-shadow: 0 30px 60px -15px rgba(0, 80, 220, 0.45);
+      background: rgba(12, 26, 52, 0.85);
+    }
+
+    .skill-card:hover::after {
+      opacity: 1;
+    }
+
+    .skill-card:hover::before {
+      opacity: 1;
+    }
+
+    /* Card accent colors */
+    .skill-card[data-accent="blue"] { --card-accent: #3d8aff; }
+    .skill-card[data-accent="purple"] { --card-accent: #a78bfa; }
+    .skill-card[data-accent="cyan"] { --card-accent: #22d3ee; }
+    .skill-card[data-accent="green"] { --card-accent: #34d399; }
+    .skill-card[data-accent="orange"] { --card-accent: #fb923c; }
+    .skill-card[data-accent="pink"] { --card-accent: #f472b6; }
+    .skill-card[data-accent="yellow"] { --card-accent: #facc15; }
+    .skill-card[data-accent="red"] { --card-accent: #f87171; }
+    .skill-card[data-accent="teal"] { --card-accent: #2dd4bf; }
+
+    .card-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+
+    .card-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.3rem;
+      flex-shrink: 0;
+      background: rgba(60, 140, 255, 0.12);
+      border: 1px solid rgba(60, 140, 255, 0.2);
+      color: var(--card-accent, #3d8aff);
+      transition: all 0.3s;
+    }
+
+    .skill-card:hover .card-icon {
+      background: rgba(60, 140, 255, 0.2);
+      box-shadow: 0 0 24px rgba(60, 140, 255, 0.3);
+      transform: scale(1.05);
+    }
+
+    .card-number {
+      font-family: var(--font-display);
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      background: rgba(255, 255, 255, 0.04);
+      padding: 0.25rem 0.7rem;
+      border-radius: 20px;
+      border: 1px solid var(--border-subtle);
+      letter-spacing: 0.05em;
+    }
+
+    .card-title {
+      font-family: var(--font-display);
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      color: #ffffff;
+      line-height: 1.3;
+    }
+
+    .card-subtitle {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-weight: 600;
+      margin-top: 0.15rem;
+    }
+
+    /* Skills section */
+    .card-section-label {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.65rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      margin-bottom: 0.6rem;
+    }
+
+    .card-section-label i {
+      font-size: 0.7rem;
+      color: var(--card-accent, #3d8aff);
+    }
+
+    .skill-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+    }
+
+    .skill-tag {
+      background: rgba(60, 140, 255, 0.08);
+      border: 1px solid rgba(60, 140, 255, 0.15);
+      color: #a8ccff;
+      padding: 0.25rem 0.75rem;
+      border-radius: 8px;
+      font-size: 0.72rem;
+      font-weight: 500;
+      transition: all 0.2s;
+      line-height: 1.4;
+    }
+
+    .skill-tag:hover {
+      background: rgba(60, 140, 255, 0.18);
+      border-color: rgba(60, 140, 255, 0.4);
+      color: #ffffff;
+      transform: translateY(-1px);
+    }
+
+    /* AWS services */
+    .aws-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+    }
+
+    .aws-tag {
+      background: rgba(251, 146, 60, 0.08);
+      border: 1px solid rgba(251, 146, 60, 0.2);
+      color: #fdba74;
+      padding: 0.25rem 0.75rem;
+      border-radius: 8px;
+      font-size: 0.72rem;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+      transition: all 0.2s;
+      line-height: 1.4;
+    }
+
+    .aws-tag i {
+      font-size: 0.6rem;
+      color: #fb923c;
+    }
+
+    .aws-tag:hover {
+      background: rgba(251, 146, 60, 0.18);
+      border-color: rgba(251, 146, 60, 0.45);
+      color: #ffffff;
+      transform: translateY(-1px);
+    }
+
+    /* Why evergreen */
+    .why-box {
+      background: rgba(52, 211, 153, 0.06);
+      border: 1px solid rgba(52, 211, 153, 0.15);
+      border-radius: 14px;
+      padding: 0.8rem 1rem;
+      display: flex;
+      gap: 0.7rem;
+      align-items: flex-start;
+      margin-top: auto;
+    }
+
+    .why-box i {
+      color: var(--accent-green);
+      font-size: 0.9rem;
+      margin-top: 0.15rem;
+      flex-shrink: 0;
+    }
+
+    .why-box p {
+      font-size: 0.78rem;
+      color: #86efac;
+      line-height: 1.55;
+      margin: 0;
+    }
+
+    .why-box p strong {
+      color: #ffffff;
+      font-weight: 600;
+    }
+
+    /* ===== SPOTLIGHT CARD ===== */
+    .spotlight {
+      background: linear-gradient(135deg, rgba(10, 25, 55, 0.9) 0%, rgba(20, 40, 80, 0.8) 100%);
+      backdrop-filter: blur(24px);
+      border: 1px solid rgba(100, 180, 255, 0.25);
+      border-radius: 32px;
+      padding: 2.5rem 2.2rem;
+      margin-bottom: 2.5rem;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 40px 80px -20px rgba(0, 60, 180, 0.3);
+    }
+
+    .spotlight::before {
+      content: '';
+      position: absolute;
+      top: -60%;
+      right: -10%;
+      width: 500px;
+      height: 500px;
+      background: radial-gradient(circle, rgba(60, 140, 255, 0.15) 0%, transparent 70%);
+      border-radius: 50%;
+      pointer-events: none;
+    }
+
+    .spotlight::after {
+      content: '';
+      position: absolute;
+      bottom: -40%;
+      left: -5%;
+      width: 400px;
+      height: 400px;
+      background: radial-gradient(circle, rgba(167, 139, 250, 0.1) 0%, transparent 70%);
+      border-radius: 50%;
+      pointer-events: none;
+    }
+
+    .spotlight-content {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 2rem;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .spotlight-text h3 {
+      font-family: var(--font-display);
+      font-size: 1.6rem;
+      font-weight: 700;
+      margin-bottom: 0.8rem;
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+      letter-spacing: -0.02em;
+    }
+
+    .spotlight-text h3 i {
+      color: var(--accent-cyan);
+      font-size: 1.8rem;
+      filter: drop-shadow(0 0 12px rgba(34, 211, 238, 0.6));
+    }
+
+    .spotlight-text p {
+      color: var(--text-secondary);
+      font-size: 0.95rem;
+      max-width: 650px;
+      line-height: 1.7;
+    }
+
+    .spotlight-cta {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .cta-badge {
+      background: linear-gradient(135deg, rgba(60, 140, 255, 0.2), rgba(167, 139, 250, 0.15));
+      border: 1px solid rgba(100, 180, 255, 0.35);
+      padding: 0.7rem 1.6rem;
+      border-radius: 40px;
+      font-weight: 700;
+      font-size: 0.85rem;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      backdrop-filter: blur(8px);
+      color: #ffffff;
+      white-space: nowrap;
+    }
+
+    .cta-badge i {
+      color: var(--accent-cyan);
+      animation: pulseDot 1.5s infinite;
+    }
+
+    /* ===== FOOTER ===== */
+    .footer {
+      text-align: center;
+      padding: 2rem 1rem 1rem;
+      border-top: 1px solid var(--border-subtle);
+      color: var(--text-muted);
+      font-size: 0.82rem;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .footer i {
+      color: var(--accent-blue);
+      font-size: 0.85rem;
+    }
+
+    .footer .fa-spin {
+      animation: spin 8s linear infinite;
+    }
+
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    /* ===== SCROLL REVEAL ===== */
+    .reveal {
+      opacity: 0;
+      transform: translateY(30px);
+      transition: opacity 0.7s cubic-bezier(0.2, 0.9, 0.3, 1), transform 0.7s cubic-bezier(0.2, 0.9, 0.3, 1);
+    }
+
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* ===== RESPONSIVE ===== */
+    @media (max-width: 900px) {
+      .skills-grid {
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      }
+      .spotlight-content {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+    }
+
+    @media (max-width: 600px) {
+      body { padding: 1rem 0.8rem 2rem; }
+      .topbar { border-radius: 30px; padding: 0.6rem 1rem; }
+      .topbar-right { gap: 1rem; font-size: 0.7rem; }
+      .hero h1 { font-size: 1.8rem; }
+      .hero p { font-size: 0.95rem; }
+      .hero-stat { padding: 0.9rem 1.4rem; min-width: 120px; }
+      .hero-stat .num { font-size: 1.5rem; }
+      .skills-grid { grid-template-columns: 1fr; gap: 1rem; }
+      .skill-card { padding: 1.4rem 1.2rem; border-radius: 22px; }
+      .spotlight { padding: 1.8rem 1.4rem; border-radius: 24px; }
+      .spotlight-text h3 { font-size: 1.3rem; }
+      .section-header { flex-direction: column; align-items: flex-start; }
+      .section-header .legend { display: none; }
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ===== TOP BAR ===== -->
+  <div class="topbar reveal">
+    <div class="brand">
+      <div class="brand-icon"><i class="fas fa-cloud"></i></div>
+      <span>AWS DevOps · Command Center</span>
+    </div>
+    <div class="topbar-right">
+      <span><span class="status-dot"></span> Systems operational</span>
+      <span><i class="fas fa-shield-haltered" style="margin-right:0.3rem; color:#7ab8ff;"></i> 2026–2030</span>
+    </div>
+  </div>
+
+  <!-- ===== HERO ===== -->
+  <div class="hero reveal">
+    <div class="hero-eyebrow">
+      <i class="fas fa-bolt"></i> The skills that define the next decade
+    </div>
+    <h1>Master the DevOps Stack<br>That Won't Expire</h1>
+    <p>
+      AI is rewriting software. But the engineers who understand <strong>CI/CD, Infrastructure as Code, Kubernetes, security, and AI-native operations</strong> will architect the systems that run the world. This is your map.
+    </p>
+    <div class="hero-stats">
+      <div class="hero-stat">
+        <div class="num">9</div>
+        <div class="lbl">Practice Areas</div>
+      </div>
+      <div class="hero-stat">
+        <div class="num">35+</div>
+        <div class="lbl">AWS Services</div>
+      </div>
+      <div class="hero-stat">
+        <div class="num">3–5</div>
+        <div class="lbl">Years Evergreen</div>
+      </div>
+      <div class="hero-stat">
+        <div class="num">∞</div>
+        <div class="lbl">Adaptability</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== SECTION HEADER ===== -->
+  <div class="section-header reveal">
+    <h2><i class="fas fa-layer-group"></i> Skills Matrix · The Full Stack</h2>
+    <div class="legend">
+      <div class="legend-item"><span class="legend-dot skills"></span> Core Skills</div>
+      <div class="legend-item"><span class="legend-dot aws"></span> AWS Services</div>
+      <div class="legend-item"><span class="legend-dot why"></span> Why Evergreen</div>
+    </div>
+  </div>
+
+  <!-- ===== SKILL CARDS GRID ===== -->
+  <div class="skills-grid">
+
+    <!-- Card 1: CI/CD -->
+    <div class="skill-card reveal" data-accent="blue">
+      <div class="card-header">
+        <div class="card-icon"><i class="fas fa-code-branch"></i></div>
+        <div class="card-number">01</div>
+      </div>
+      <div>
+        <div class="card-title">CI/CD Pipeline Engineering</div>
+        <div class="card-subtitle">Automated Delivery</div>
+      </div>
+      <div>
+        <div class="card-section-label"><i class="fas fa-tools"></i> Core Skills</div>
+        <div class="skill-tags">
+          <span class="skill-tag">Pipeline orchestration</span>
+          <span class="skill-tag">Build automation</span>
+          <span class="skill-tag">Artifact management</span>
+          <span class="skill-tag">Blue/green & canary</span>
+          <span class="skill-tag">Rollback planning</span>
+        </div>
+      </div>
+      <div>
+        <div class="card-section-label"><i class="fab fa-aws"></i> AWS Services</div>
+        <div class="aws-tags">
+          <span class="aws-tag"><i class="fab fa-aws"></i> CodePipeline</span>
+          <span class="aws-tag"><i class="fab fa-aws"></i> CodeBuild</span>
+          <span class="aws-tag"><i class="fab fa-aws"></i> CodeDeploy</span>
+          <span class="aws-tag"><i class="fab fa-aws"></i> CodeArtifact</span>
+          <span class="aws-tag"><i class="fab fa-aws"></i> CodeCommit</span>
+        </div>
+      </div>
+      <div class="why-box">
+        <i class="fas fa-check-circle"></i>
+        <p><strong>Evergreen:</strong> Every team needs automated delivery. Pipelines are the backbone — tools evolve, thinking remains.</p>
+      </div>
+    </div>
+
+    <!-- Card 2: IaC -->
+    <div class="skill-card reveal" data-accent="purple">
+      <div class="card-header">
+        <div class="card-icon"><i class="fas fa-cubes"></i></div>
+        <div class="card-number">02</div>
+      </div>
+      <div>
+        <div class="card-title">Infrastructure as Code</div>
+        <div class="card-subtitle">Reproducible Systems</div>
+      </div>
+      <div>
+        <div class="card-section-label"><i class="fas fa-tools"></i> Core Skills</div>
+        <div class="skill-tags">
+          <span class="skill-tag">YAML/JSON templates</span>
+          <span class="skill-tag">CDK (TypeScript/Python)</span>
+          <span class="skill-tag">Version control of infra</span>
+          <span class="skill-tag">Drift detection</span>
+          <span class="skill-tag">Modular design</span>
+        </div>
+      </div>
+      <div>
+        <div class="card-section-label"><i class="fab fa-aws"></i> AWS Services</div>
+        <div class="aws-tags">
+          <span class="aws-tag"><i class="fab fa-aws"></i> CloudFormation</span>
+          <span class="aws-tag"><i class="fab fa-aws"></i> AWS CDK</span>
+          <span class="aws-tag"><i class="fab fa-aws"></i> AWS SAM</span>
+          <span class="aws-tag"><i class="fab fa-aws"></i> AWS Proton</span>
+        </div>
+      </div>
+      <div class="why-box">
+        <i class="fas fa-check-circle"></i>
+        <p><strong>Evergreen:</strong> IaC is mandatory for reproducible, auditable infrastructure. CloudFormation and CDK are deeply integrated into AWS.</p>
+      </div>
+    </div>
+
+    <!-- Card 3: Containers -->
+    <div class="skill-card reveal" data-accent="cyan">
+      <div class="card-header">
+        <div class="card-icon"><i class="fas fa-dharmachakra"></i></div>
+        <div class="card-number">03</div>
+      </div>
+      <div>
+        <div class="card-title">Container Orchestration & Serverless</div>
+        <div class="card-subtitle">Modern Workloads</div>
+      </div>
+      <div>
+        <div class="card-section-label"><i class="fas fa-tools"></i> Core Skills</div>
+        <div class="skill-tags">
+          <span class="skill-tag">Docker</span>
+          <span class="skill-tag">Kubernetes</span>
+          <span class="skill-tag">Helm</span>
+          <span class="skill-tag">Container security</span>
+          <span class="skill-tag">Microservices</span>
+          <span class="skill-tag">Serverless patterns</span>
+        </div>
+      </div>
+      <div>
+        <div class="card-section-label"><i class="fab fa-aws"></i> AWS Services</div>
+        <div class="aws-tags">
+          <span class="aws-tag"><i class="fab fa-aws"></i> Amazon ECS</span>
+          <span class="aws-tag"><i class="fab fa-aws"></i> Amazon EKS</span>
+          <span class="aws-tag"><i class="fab fa-aws"></i> AWS Fargate</span>
+          <span class="aws-tag"><i class="fab fa-aws"></i> AWS Lambda</span>
+        </div>
+      </div>
+      <div class="why-box">
+        <i class="fas fa-check-circle"></i>
+        <p><strong>Evergreen:</strong> Kubernetes is the default orchestration layer; serverless handles event-driven workloads. Both are core to modern platforms.</p>
+      </div>
+    </div>
+
+    <!-- Card 4: Observability -->
+    <div class="skill-card reveal" data-accent="green">
+      <div class="card-header">
+        <div class="card-icon"><i class="fas fa-eye"></i></div>
+        <div class="card-number">04</div>
+      </div>
+      <div>
+        <div class="card-title">Monitoring, Observability & AIOps</div>
+        <div class="card-subtitle">The Feedback Loop</div>
+      </div>
+      <div>
+        <div class="card-section-label"><i class="fas fa-tools"></i> Core Skills</div>
+        <div class="skill-tags">
+          <span class="skill-tag">Metrics & logging</span>
+          <span class="skill-tag">Distributed tracing</span>
+          <span class="skill-tag">Dashboards & alerting</span>
+          <span class="skill-tag">Anomaly detection</span>
+          <span class="skill-tag">SLO/SLI design</span>
+        </div>
+      </div>
+      <div>
+        <div class="card-section-label"><i class="fab fa-aws"></i> AWS Services</div>
+        <div class="aws-tags">
+          <span class="aws-tag"><i class="fab fa-aws"></i> CloudWatch</span>
+          <span class="aws-tag"><i class="fab fa-aws"></i> AWS X-Ray</span>
+          <span class="aws-tag"><i class="fab fa-aws"></i> DevOps Guru</span>
+          <span class="aws-tag"><i class="fab fa-aws"></i> Managed Prometheus</span>
+          <span class="aws-tag"><i class="fab fa-aws"></i> Managed Grafana</span>
+        </div>
+      </div>
+      <div class="why-box">
+        <i class="fas fa-check-circle"></i>
+        <p><strong>Evergreen:</strong> Observability is the feedback loop DevOps depends on. AIOps is the emerging standard for proactive operations.</p>
+      </div>
+    </div>
+
+    <!-- Card 5: Security -->
+    <div class="skill-card reveal" data-accent="red">
+      <div class="card-header">
+        <div class="card-icon"><i class="fas fa-shield-haltered"></i></div>
+        <div class="card-number">05</div>
+      </div>
+      <div>
+        <div class="card-title">Security & DevSecOps</div>
+        <div class="card-subtitle">Shift Left, Stay Safe</div>
+      </div>
+      <div>
+        <div class="card-section-label"><i class="fas fa-tools"></i> Core Skills</div>
+        <div class="skill-tags">
+          <span class="skill-tag">IAM policies</span>
+          <span class="skill-tag">Encryption & KMS</span>
+          <span class="skill-tag">Vulnerability scanning</span>
+          <span class="skill-tag">Secrets management</span>
+          <span class="skill-tag">Supply-chain security</span>
+          <span class="skill-tag">Policy-as-code</span>
+        </div>
+      </div>
+      <div>
+        <div class="card-section-label"><i class="fab fa-aws"></i> AWS Services</div>
+        <div class="aws-tags">
+          <span class="aws-tag"><i class="fab fa-aws"></i> AWS IAM</span>
+          <span class="aws-tag"><i class="fab fa-aws"></i> AWS KMS</span>
+          <span class="aws-tag"><i class="fab fa-aws"></i> Inspector</span>
+          <span class="aws-tag"><i class="fab fa-aws"></i> GuardDuty</span>
+          <span class="aws-tag"><i class="fab fa-aws"></i> Trivy</span>
+          <span class="aws-tag"><i class="fab fa-aws"></i> Vault</span>
+          <span class="aws-tag"><i class="fab fa-aws"></i> OPA/Kyverno</span>
+        </div>
+      </div>
+      <div class="why-box">
+        <i class="fas fa-check-circle"></i>
+        <p><strong>Evergreen:</strong> Security shifts left and regulatory pressure increases. DevSecOps is non-negotiable and growing in demand.</p>
+      </div>
+    </div>
+
+    <!-- Card 6: Platform Engineering -->
+    <div class="skill-card reveal" data-accent="orange">
+      <div class="card-header">
+        <div class="card-icon"><i class="fas fa-cloud"></i></div>
+        <div class="card-number">06</div>
+      </div>
+      <div>
+        <div class="card-title">Platform Engineering & DevEx</div>
+        <div class="card-subtitle">Developer Velocity</div>
+      </div>
+      <div>
+        <div class="card-section-label"><i class="fas fa-tools"></i> Core Skills</div>
+        <div class="skill-tags">
+          <span class="skill-tag">Internal developer platforms</span>
+          <span class="skill-tag">Self-service infra</span>
+          <span class="skill-tag">Golden paths</span>
+          <span class="skill-tag">Toolchain standardization</span>
+        </div>
+      </div>
+      <div>
+        <div class="card-section-label"><i class="fab fa-aws"></i> AWS Services</div>
+        <div class="aws-tags">
+          <span class="aws-tag"><i class="fab fa-aws"></i> AWS Proton</span>
+          <span class="aws-tag"><i class="fab fa-aws"></i> Service Catalog</span>
+          <span class="aws-tag"><i class="fab fa-aws"></i> Cloud9</span>
+          <span class="aws-tag"><i class="fab fa-aws"></i> CloudShell</span>
+        </div>
+      </div>
+      <div class="why-box">
+        <i class="fas fa-check-circle"></i>
+        <p><strong>Evergreen:</strong> Companies build platforms to reduce cognitive load. DevOps evolves into platform engineering.</p>
+      </div>
+    </div>
+
+    <!-- Card 7: AI-Native Ops -->
+    <div class="skill-card reveal" data-accent="pink">
+      <div class="card-header">
+        <div class="card-icon"><i class="fas fa-robot"></i></div>
+        <div class="card-number">07</div>
+      </div>
+      <div>
+        <div class="card-title">AI-Native Operations</div>
+        <div class="card-subtitle">The Next Frontier</div>
+      </div>
+      <div>
+        <div class="card-section-label"><i class="fas fa-tools"></i> Core Skills</div>
+        <div class="skill-tags">
+          <span class="skill-tag">AI agents for incident response</span>
+          <span class="skill-tag">MCP protocol</span>
+          <span class="skill-tag">Python for AI tooling</span>
+          <span class="skill-tag">LLM integration</span>
+          <span class="skill-tag">Automated remediation</span>
+        </div>
+      </div>
+      <div>
+        <div class="card-section-label"><i class="fab fa-aws"></i> AWS Services</div>
+        <div class="aws-tags">
+          <span class="aws-tag"><i class="fab fa-aws"></i> DevOps Agent</span>
+          <span class="aws-tag"><i class="fab fa-aws"></i> Amazon Bedrock</span>
+          <span class="aws-tag"><i class="fab fa-aws"></i> AWS Lambda</span>
+        </div>
+      </div>
+      <div class="why-box">
+        <i class="fas fa-check-circle"></i>
+        <p><strong>Evergreen:</strong> Next 3–5 years: AI agents handle first-line incident response. Engineers who build these systems will be highly valued.</p>
+      </div>
+    </div>
+
+    <!-- Card 8: Networking -->
+    <div class="skill-card reveal" data-accent="teal">
+      <div class="card-header">
+        <div class="card-icon"><i class="fas fa-network-wired"></i></div>
+        <div class="card-number">08</div>
+      </div>
+      <div>
+        <div class="card-title">Cloud Networking & Reliability</div>
+        <div class="card-subtitle">The Bedrock</div>
+      </div>
+      <div>
+        <div class="card-section-label"><i class="fas fa-tools"></i> Core Skills</div>
+        <div class="skill-tags">
+          <span class="skill-tag">VPC design</span>
+          <span class="skill-tag">Load balancing</span>
+          <span class="skill-tag">DNS & routing</span>
+          <span class="skill-tag">Auto-scaling</span>
+          <span class="skill-tag">Disaster recovery</span>
+          <span class="skill-tag">Well-Architected</span>
+        </div>
+      </div>
+      <div>
+        <div class="card-section-label"><i class="fab fa-aws"></i> AWS Services</div>
+        <div class="aws-tags">
+          <span class="aws-tag"><i class="fab fa-aws"></i> Amazon VPC</span>
+          <span class="aws-tag"><i class="fab fa-aws"></i> ELB</span>
+          <span class="aws-tag"><i class="fab fa-aws"></i> CloudFront</span>
+          <span class="aws-tag"><i class="fab fa-aws"></i> Route 53</span>
+          <span class="aws-tag"><i class="fab fa-aws"></i> Auto Scaling</span>
+          <span class="aws-tag"><i class="fab fa-aws"></i> Well-Architected Tool</span>
+        </div>
+      </div>
+      <div class="why-box">
+        <i class="fas fa-check-circle"></i>
+        <p><strong>Evergreen:</strong> Reliability and networking fundamentals are the bedrock of every cloud system. These never go out of style.</p>
+      </div>
+    </div>
+
+    <!-- Card 9: Scripting -->
+    <div class="skill-card reveal" data-accent="yellow">
+      <div class="card-header">
+        <div class="card-icon"><i class="fas fa-terminal"></i></div>
+        <div class="card-number">09</div>
+      </div>
+      <div>
+        <div class="card-title">Scripting & Automation</div>
+        <div class="card-subtitle">The Heart of DevOps</div>
+      </div>
+      <div>
+        <div class="card-section-label"><i class="fas fa-tools"></i> Core Skills</div>
+        <div class="skill-tags">
+          <span class="skill-tag">Python</span>
+          <span class="skill-tag">Bash</span>
+          <span class="skill-tag">PowerShell</span>
+          <span class="skill-tag">API integration</span>
+          <span class="skill-tag">CLI tooling</span>
+          <span class="skill-tag">Event-driven automation</span>
+        </div>
+      </div>
+      <div>
+        <div class="card-section-label"><i class="fab fa-aws"></i> AWS Services</div>
+        <div class="aws-tags">
+          <span class="aws-tag"><i class="fab fa-aws"></i> AWS CLI</span>
+          <span class="aws-tag"><i class="fab fa-aws"></i> Boto3 (SDK)</span>
+          <span class="aws-tag"><i class="fab fa-aws"></i> Systems Manager</span>
+          <span class="aws-tag"><i class="fab fa-aws"></i> EventBridge</span>
+        </div>
+      </div>
+      <div class="why-box">
+        <i class="fas fa-check-circle"></i>
+        <p><strong>Evergreen:</strong> Automation is the heart of DevOps. Python remains the primary scripting language, now also essential for AI integration.</p>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ===== SPOTLIGHT: AI-NATIVE SHIFT ===== -->
+  <div class="spotlight reveal">
+    <div class="spotlight-content">
+      <div class="spotlight-text">
+        <h3><i class="fas fa-brain"></i> The AI-Native Shift Is Here</h3>
+        <p>
+          Amazon DevOps Agent (preview) is ushering in a new era of autonomous operations. It combines AI agents with your existing CI/CD, IaC, and observability stack to automate incident response, root-cause analysis, and remediation. <strong>Engineers who master this layer will define the next decade of DevOps.</strong>
+        </p>
+      </div>
+      <div class="spotlight-cta">
+        <div class="cta-badge">
+          <i class="fas fa-star"></i> Emerging · High Demand
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== FOOTER ===== -->
+  <div class="footer reveal">
+    <i class="fas fa-sync-alt fa-spin"></i>
+    <span>Evergreen because they combine deep fundamentals (Linux, networking, Git, security) with adaptability to new AI paradigms.</span>
+    <i class="fas fa-infinity"></i>
+  </div>
+
+</div>
+
+<!-- ===== JAVASCRIPT ===== -->
+<script>
+  (function() {
+    'use strict';
+
+    // Log for developers
+    console.log('%c🚀 AWS DevOps Command Center loaded', 'font-size: 16px; font-weight: bold; color: #3d8aff;');
+    console.log('%c💡 Skills matrix ready as a learning guide.', 'font-size: 12px; color: #9bb5da;');
+
+    // ===== SCROLL REVEAL =====
+    const revealElements = document.querySelectorAll('.reveal');
+
+    const revealObserver = new IntersectionObserver((entries) => {
+      entries.forEach((entry, index) => {
+        if (entry.isIntersecting) {
+          // Stagger the animation
+          setTimeout(() => {
+            entry.target.classList.add('visible');
+          }, index * 60);
+          revealObserver.unobserve(entry.target);
+        }
+      });
+    }, {
+      threshold: 0.1,
+      rootMargin: '0px 0px -50px 0px'
+    });
+
+    revealElements.forEach(el => revealObserver.observe(el));
+
+    // ===== CARD HOVER TILT (subtle) =====
+    const cards = document.querySelectorAll('.skill-card');
+
+    cards.forEach(card => {
+      card.addEventListener('mousemove', (e) => {
+        const rect = card.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+
+        // Subtle radial glow following cursor
+        const glow = card.querySelector('.card-glow') || document.createElement('div');
+        if (!card.querySelector('.card-glow')) {
+          glow.className = 'card-glow';
+          glow.style.cssText = `
+            position: absolute;
+            inset: 0;
+            border-radius: 28px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+            background: radial-gradient(circle at ${x}px ${y}px, rgba(60, 140, 255, 0.08), transparent 60%);
+            z-index: 0;
+          `;
+          card.style.position = 'relative';
+          card.appendChild(glow);
+        } else {
+          glow.style.background = `radial-gradient(circle at ${x}px ${y}px, rgba(60, 140, 255, 0.08), transparent 60%)`;
+        }
+        glow.style.opacity = '1';
+      });
+
+      card.addEventListener('mouseleave', () => {
+        const glow = card.querySelector('.card-glow');
+        if (glow) glow.style.opacity = '0';
+      });
+    });
+
+    // ===== HERO STAT COUNTER ANIMATION =====
+    const statNumbers = document.querySelectorAll('.hero-stat .num');
+
+    const animateValue = (el, start, end, duration, suffix = '') => {
+      let startTimestamp = null;
+      const step = (timestamp) => {
+        if (!startTimestamp) startTimestamp = timestamp;
+        const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+        const eased = 1 - Math.pow(1 - progress, 3); // ease-out cubic
+        const current = Math.floor(eased * (end - start) + start);
+        el.textContent = current + suffix;
+        if (progress < 1) {
+          window.requestAnimationFrame(step);
+        } else {
+          el.textContent = end + suffix;
+        }
+      };
+      window.requestAnimationFrame(step);
+    };
+
+    // Only animate if numbers are numeric
+    statNumbers.forEach(el => {
+      const text = el.textContent.trim();
+      if (text === '∞') return;
+      if (text.includes('–')) return; // skip ranges like 3–5
+
+      const num = parseInt(text);
+      if (!isNaN(num)) {
+        el.textContent = '0';
+        setTimeout(() => {
+          animateValue(el, 0, num, 1200);
+        }, 400);
+      }
+    });
+
+    // ===== SMOOTH SCROLL FOR ANCHORS (if added later) =====
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener('click', function(e) {
+        e.preventDefault();
+        const target = document.querySelector(this.getAttribute('href'));
+        if (target) {
+          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      });
+    });
+
+  })();
+</script>
+</body>
+</html>
