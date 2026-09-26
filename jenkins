@@ -9,7 +9,7 @@ pipeline {
     environment {
         AWS_REGION      = 'ap-south-1'
         ECR_REPOSITORY  = 'static-site'
-        EKS_CLUSTER     = 'demo1'
+        EKS_CLUSTER     = 'demo2'
         K8S_NAMESPACE   = 'static-site'
         IMAGE_TAG       = "${BUILD_NUMBER}"
     }
