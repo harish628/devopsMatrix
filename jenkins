@@ -1,0 +1,110 @@
+pipeline {
+    agent any
+
+    options {
+        timestamps()
+        disableConcurrentBuilds()
+    }
+
+    environment {
+        AWS_REGION      = 'ap-south-1'
+        ECR_REPOSITORY  = 'static-site'
+        EKS_CLUSTER     = 'demo'
+        K8S_NAMESPACE   = 'static-site'
+        IMAGE_TAG       = "${BUILD_NUMBER}"
+    }
+
+    stages {
+        stage('Resolve AWS account ID') {
+            steps {
+                script {
+                    try {
+                        env.AWS_ACCOUNT_ID = sh(
+                            script: 'aws sts get-caller-identity --query Account --output text --region "$AWS_REGION"',
+                            returnStdout: true
+                        ).trim()
+                        if (!(env.AWS_ACCOUNT_ID ==~ /[0-9]{12}/)) {
+                            error('AWS identity returned an invalid account ID.')
+                        }
+                        echo "\u001B[32mSUCCESS: Resolved AWS account ID ${env.AWS_ACCOUNT_ID}.\u001B[0m"
+                    } catch (err) {
+                        echo "\u001B[31mFAILURE: AWS account ID resolution failed: ${err}\u001B[0m"
+                        throw err
+                    }
+                }
+            }
+        }
+        stage('Checkout and validate source') {
+            steps {
+                script {
+                    try {
+                        git branch: 'main', url: 'https://github.com/harish628/devopsMatrix.git'
+                        if (!fileExists('Dockerfile')) {
+                            error('Dockerfile is missing from the repository root.')
+                        }
+                        echo "\u001B[32mSUCCESS: Source checkout and Dockerfile validation passed.\u001B[0m"
+                    } catch (err) {
+                        echo "\u001B[31mFAILURE: Checkout/source validation failed: ${err}\u001B[0m"
+                        throw err
+                    }
+                }
+            }
+        }
+
+        stage('Build Docker image') {
+            steps {
+                script {
+                    try {
+                        withEnv(["ECR_REGISTRY=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"]) {
+                            sh 'docker build --pull -t "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" .'
+                            sh 'docker image inspect "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >/dev/null'
+                        }
+                        echo "\u001B[32mSUCCESS: Docker image built and verified.\u001B[0m"
+                    } catch (err) {
+                        echo "\u001B[31mFAILURE: Docker build/verification failed: ${err}\u001B[0m"
+                        throw err
+                    }
+                }
+            }
+        }
+
+        stage('Push image to ECR') {
+            steps {
+                script {
+                    try {
+                        withEnv(["ECR_REGISTRY=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"]) {
+                            sh '''#!/bin/sh
+                                set -eu
+                                aws sts get-caller-identity --region "$AWS_REGION" >/dev/null
+                                aws ecr get-login-password --region "$AWS_REGION" | docker login --username AWS --password-stdin "$ECR_REGISTRY"
+                                docker push "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+                                aws ecr describe-images --region "$AWS_REGION" --repository-name "$ECR_REPOSITORY" --image-ids imageTag="$IMAGE_TAG" >/dev/null
+                            '''
+                        }
+                        echo "\u001B[32mSUCCESS: Image push and ECR image lookup passed.\u001B[0m"
+                    } catch (err) {
+                        echo "\u001B[31mFAILURE: ECR push/validation failed: ${err}\u001B[0m"
+                        throw err
+                    }
+                }
+            }
+        }
+
+
+    }
+
+    post {
+        success {
+            echo "\u001B[32mPIPELINE SUCCESS: Every stage completed and passed validation.\u001B[0m"
+        }
+        failure {
+            echo "\u001B[31mPIPELINE FAILURE: Review the failed stage output above.\u001B[0m"
+        }
+        always {
+            script {
+                def registry = "${env.AWS_ACCOUNT_ID}.dkr.ecr.${env.AWS_REGION}.amazonaws.com"
+                sh "docker image rm '${registry}/${env.ECR_REPOSITORY}:${env.IMAGE_TAG}' >/dev/null 2>&1 || true"
+            }
+        }
+    }
+}
