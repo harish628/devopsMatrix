@@ -59,9 +59,13 @@ pipeline {
                             sh 'docker build --pull -t "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" .'
                             sh 'docker image inspect "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >/dev/null'
                         }
-                        echo "\u001B[32mSUCCESS: Docker image built and verified.\u001B[0m"
+                        ansiColor('xterm') {
+                            echo "\u001B[32mSUCCESS: Docker image built and verified.\u001B[0m"
+                        }
                     } catch (err) {
-                        echo "\u001B[31mFAILURE: Docker build/verification failed: ${err}\u001B[0m"
+                        ansiColor('xterm') {
+                            echo "\u001B[31mFAILURE: Docker build/verification failed: ${err}\u001B[0m"
+                        }
                         throw err
                     }
                 }
@@ -76,6 +80,12 @@ pipeline {
                             sh '''#!/bin/sh
                                 set -eu
                                 aws sts get-caller-identity --region "$AWS_REGION" >/dev/null
+                                if aws ecr describe-repositories --region "$AWS_REGION" --repository-names "$ECR_REPOSITORY" >/dev/null 2>&1; then
+                                    echo "ECR repository $ECR_REPOSITORY already exists; skipping creation."
+                                else
+                                    echo "ECR repository $ECR_REPOSITORY does not exist; creating it."
+                                    aws ecr create-repository --region "$AWS_REGION" --repository-name "$ECR_REPOSITORY" >/dev/null
+                                fi
                                 aws ecr get-login-password --region "$AWS_REGION" | docker login --username AWS --password-stdin "$ECR_REGISTRY"
                                 docker push "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
                                 aws ecr describe-images --region "$AWS_REGION" --repository-name "$ECR_REPOSITORY" --image-ids imageTag="$IMAGE_TAG" >/dev/null
