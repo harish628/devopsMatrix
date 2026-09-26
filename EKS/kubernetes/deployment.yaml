@@ -15,6 +15,6 @@ spec:
     spec:
       containers:
         - name: nginx
-          image: 840986438223.dkr.ecr.ap-south-1.amazonaws.com/static-site:1.0
+          image: IMAGE_PLACEHOLDER
           ports:
             - containerPort: 80

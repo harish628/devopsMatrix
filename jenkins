@@ -203,12 +203,18 @@ pipeline {
                         sh '''#!/bin/sh
                             set -eu
                             kubectl apply -f $WORKSPACE/EKS/kubernetes/namespace.yaml
-                            kubectl apply -n "$K8S_NAMESPACE" -f $WORKSPACE/EKS/kubernetes/deployment.yaml
+
+                            sed "s|IMAGE_PLACEHOLDER|${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY}:${IMAGE_TAG}|g" "$WORKSPACE/EKS/kubernetes/deployment.yaml" | kubectl apply  -f -
+                            
                             kubectl apply -n "$K8S_NAMESPACE" -f $WORKSPACE/EKS/kubernetes/service.yaml
+                            
                             kubectl rollout status deployment --all -n "$K8S_NAMESPACE" --timeout=10m
+                            
                             kubectl wait --for=condition=Ready pods --all -n "$K8S_NAMESPACE" --timeout=10m
+                            
                             kubectl wait --for=jsonpath='{.status.loadBalancer.ingress}' service --all -n "$K8S_NAMESPACE" --timeout=10m
                             echo 'LoadBalancer service URL:'
+                            
                             kubectl get services -n "$K8S_NAMESPACE" -o go-template='{{range .items}}{{if eq .spec.type "LoadBalancer"}}{{with index .status.loadBalancer.ingress 0}}{{if .hostname}}http://{{.hostname}}{{else}}http://{{.ip}}{{end}}{{"\n"}}{{end}}{{end}}{{end}}'
                         '''
                         echo "\u001B[32mSUCCESS: Kubernetes resources are healthy and service URLs were printed.\u001B[0m"
