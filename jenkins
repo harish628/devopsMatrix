@@ -3,6 +3,7 @@ pipeline {
 
     parameters {
         choice(name: 'ACTION', choices: ['Initialize', 'Delete'], description: 'Initialize or delete the EKS cluster and its Kubernetes resources.')
+        string(name: 'EKS_CLUSTER', defaultValue: 'demo2', description: 'Name of the EKS cluster.')
     }
 
     options {
@@ -13,7 +14,6 @@ pipeline {
     environment {
         AWS_REGION      = 'ap-south-1'
         ECR_REPOSITORY  = 'static-site'
-        EKS_CLUSTER     = 'demo2'
         K8S_NAMESPACE   = 'static-site'
         IMAGE_TAG       = "${BUILD_NUMBER}"
     }
@@ -202,24 +202,26 @@ pipeline {
                     try {
                         sh '''#!/bin/sh
                             set -eu
-                            kubectl apply -f $WORKSPACE/EKS/kubernetes/namespace.yaml
+                            kubectl apply -f "$WORKSPACE/EKS/kubernetes/namespace.yaml"
 
-                            sed "s|IMAGE_PLACEHOLDER|${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY}:${IMAGE_TAG}|g" "$WORKSPACE/EKS/kubernetes/deployment.yaml" | kubectl apply  -f -
+                            sed "s|IMAGE_PLACEHOLDER|${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY}:${IMAGE_TAG}|g" "$WORKSPACE/EKS/kubernetes/deployment.yaml" | kubectl apply -f -
                             
-                            kubectl apply -n "$K8S_NAMESPACE" -f $WORKSPACE/EKS/kubernetes/service.yaml
+                            kubectl apply -n "$K8S_NAMESPACE" -f "$WORKSPACE/EKS/kubernetes/service.yaml"
                             
-                            kubectl rollout status deployment --all -n "$K8S_NAMESPACE" --timeout=10m
-                            
+                            kubectl rollout status deployment -n "$K8S_NAMESPACE" --timeout=10m
                             kubectl wait --for=condition=Ready pods --all -n "$K8S_NAMESPACE" --timeout=10m
+                            echo 'Pod status:'
+                            kubectl get pods -n "$K8S_NAMESPACE" -o wide
                             
                             kubectl wait --for=jsonpath='{.status.loadBalancer.ingress}' service --all -n "$K8S_NAMESPACE" --timeout=10m
                             echo 'LoadBalancer service URL:'
-                            
                             kubectl get services -n "$K8S_NAMESPACE" -o go-template='{{range .items}}{{if eq .spec.type "LoadBalancer"}}{{with index .status.loadBalancer.ingress 0}}{{if .hostname}}http://{{.hostname}}{{else}}http://{{.ip}}{{end}}{{"\n"}}{{end}}{{end}}{{end}}'
                         '''
                         echo "\u001B[32mSUCCESS: Kubernetes resources are healthy and service URLs were printed.\u001B[0m"
                     } catch (err) {
-                        echo "\u001B[31mFAILURE: Kubernetes apply/health check failed: ${err}\u001B[0m"
+                        ansiColor('xterm') {
+                            echo "\u001B[31mFAILURE: Kubernetes apply/health check failed: ${err}\u001B[0m"
+                        }
                         throw err
                     }
                 }
