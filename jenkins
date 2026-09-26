@@ -179,6 +179,10 @@ pipeline {
                                         --nodes 2 --nodes-min 1 --nodes-max 3
                             fi
                             aws eks update-kubeconfig --region "$AWS_REGION" --name "$EKS_CLUSTER"
+                            if ! command -v kubectl >/dev/null 2>&1; then
+                                echo "kubectl is missing from the Jenkins agent PATH. Install kubectl on the agent and rerun this pipeline." >&2
+                                exit 127
+                            fi
                             kubectl wait --for=condition=Ready nodes --all --timeout=30m
                             kubectl get nodes 
                         '''
