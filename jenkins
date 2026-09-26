@@ -1,6 +1,10 @@
 pipeline {
     agent any
 
+    parameters {
+        choice(name: 'ACTION', choices: ['Initialize', 'Delete'], description: 'Initialize or delete the EKS cluster and its Kubernetes resources.')
+    }
+
     options {
         timestamps()
         disableConcurrentBuilds()
@@ -15,7 +19,37 @@ pipeline {
     }
 
     stages {
+        stage('Delete EKS cluster and associated resources') {
+            when {
+                beforeAgent true
+                expression { params.ACTION == 'Delete' }
+            }
+            steps {
+                script {
+                    try {
+                        sh '''#!/bin/sh
+                            set -eu
+                            if eksctl get cluster --name "$EKS_CLUSTER" --region "$AWS_REGION" >/dev/null 2>&1; then
+                                aws eks update-kubeconfig --region "$AWS_REGION" --name "$EKS_CLUSTER"
+                                if kubectl get namespace "$K8S_NAMESPACE" >/dev/null 2>&1; then
+                                    kubectl delete namespace "$K8S_NAMESPACE" --wait=true --timeout=10m
+                                fi
+                                eksctl delete cluster --name "$EKS_CLUSTER" --region "$AWS_REGION" --wait
+                            else
+                                echo "EKS cluster $EKS_CLUSTER does not exist; nothing to delete."
+                            fi
+                        '''
+                        echo "\u001B[32mSUCCESS: EKS cluster and associated Kubernetes resources were deleted.\u001B[0m"
+                    } catch (err) {
+                        echo "\u001B[31mFAILURE: EKS teardown failed: ${err}\u001B[0m"
+                        throw err
+                    }
+                }
+            }
+        }
+
         stage('Resolve AWS account ID') {
+            when { expression { params.ACTION == 'Initialize' } }
             steps {
                 script {
                     try {
@@ -35,6 +69,7 @@ pipeline {
             }
         }
         stage('Checkout and validate source') {
+            when { expression { params.ACTION == 'Initialize' } }
             steps {
                 script {
                     try {
@@ -52,6 +87,7 @@ pipeline {
         }
 
         stage('Build Docker image') {
+            when { expression { params.ACTION == 'Initialize' } }
             steps {
                 script {
                     try {
@@ -73,6 +109,7 @@ pipeline {
         }
 
         stage('Push image to ECR') {
+            when { expression { params.ACTION == 'Initialize' } }
             steps {
                 script {
                     try {
@@ -101,6 +138,7 @@ pipeline {
         }
 
         stage('Create EKS cluster') {
+            when { expression { params.ACTION == 'Initialize' } }
             steps {
                 script {
                     try {
@@ -123,6 +161,7 @@ pipeline {
         }
 
         stage('Create EKS node group') {
+            when { expression { params.ACTION == 'Initialize' } }
             steps {
                 script {
                     try {
@@ -139,8 +178,8 @@ pipeline {
                                         --full-ecr-access --appmesh-access --alb-ingress-access \\
                                         --nodes 2 --nodes-min 1 --nodes-max 3
                             fi
-                            aws eks update-kubeconfig --name "$EKS_CLUSTER" --region "$AWS_REGION"
-                            kubectl wait --for=condition=Ready nodes --all --timeout=20m
+                            aws eks update-kubeconfig --region "$AWS_REGION" --name "$EKS_CLUSTER"
+                            kubectl wait --for=condition=Ready nodes --all --timeout=30m
                             kubectl get nodes 
                         '''
                         echo "\u001B[32mSUCCESS: EKS node group is healthy.\u001B[0m"
@@ -153,6 +192,7 @@ pipeline {
         }
 
         stage('Apply Kubernetes manifests') {
+            when { expression { params.ACTION == 'Initialize' } }
             steps {
                 script {
                     try {
