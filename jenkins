@@ -202,7 +202,7 @@ pipeline {
                     try {
                         sh '''#!/bin/sh
                             set -eu
-                            kubectl apply -f EKS/kubernetes/namespace.yaml
+                            kubectl apply -f $WORKSPACE/EKS/kubernetes/namespace.yaml
                             kubectl apply -n "$K8S_NAMESPACE" -f $WORKSPACE/EKS/kubernetes/deployment.yaml
                             kubectl apply -n "$K8S_NAMESPACE" -f $WORKSPACE/EKS/kubernetes/service.yaml
                             kubectl rollout status deployment --all -n "$K8S_NAMESPACE" --timeout=10m
