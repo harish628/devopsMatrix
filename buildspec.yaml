@@ -1,0 +1,51 @@
+version: 0.2
+
+phases:
+
+  pre_build:
+    commands:
+      - echo "Getting AWS account ID..."
+      - AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+      - ECR_REGISTRY=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com
+
+      - echo "Logging in to Amazon ECR..."
+      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $ECR_REGISTRY
+
+      - echo "Checking ECR repository..."
+      - |
+        if aws ecr describe-repositories \
+          --region $AWS_DEFAULT_REGION \
+          --repository-names $ECR_REPOSITORY >/dev/null 2>&1
+        then
+          echo "ECR repository already exists."
+        else
+          echo "Creating ECR repository..."
+          aws ecr create-repository \
+            --region $AWS_DEFAULT_REGION \
+            --repository-name $ECR_REPOSITORY
+        fi
+
+  build:
+    commands:
+      - echo "Building Docker image..."
+      - docker build --pull -t $ECR_REGISTRY/$ECR_REPOSITORY:$CODEBUILD_BUILD_NUMBER .
+
+      - echo "Verifying Docker image..."
+      - docker image inspect $ECR_REGISTRY/$ECR_REPOSITORY:$CODEBUILD_BUILD_NUMBER
+
+  post_build:
+    commands:
+      - echo "Pushing Docker image to ECR..."
+      - docker push $ECR_REGISTRY/$ECR_REPOSITORY:$CODEBUILD_BUILD_NUMBER
+
+      - echo "Verifying ECR image..."
+      - aws ecr describe-images \
+          --region $AWS_DEFAULT_REGION \
+          --repository-name $ECR_REPOSITORY \
+          --image-ids imageTag=$CODEBUILD_BUILD_NUMBER
+
+      - echo "Build completed successfully."
+
+env:
+  variables:
+    ECR_REPOSITORY: "static-site"
