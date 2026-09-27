@@ -3,6 +3,8 @@ kind: Deployment
 metadata:
   name: static-site
   namespace: static-site
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
 spec:
   replicas: 2
   selector:
@@ -15,6 +17,6 @@ spec:
     spec:
       containers:
         - name: nginx
-          image: IMAGE_PLACEHOLDER
+          image: placeholder/static-site:placeholder
           ports:
             - containerPort: 80

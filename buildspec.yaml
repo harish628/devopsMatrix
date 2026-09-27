@@ -45,8 +45,12 @@ phases:
           --repository-name "$ECR_REPOSITORY" \
           --image-ids "imageTag=$CODEBUILD_BUILD_NUMBER"
 
+      - echo "Deploying image to EKS..."
+      - EKS_CLUSTER="$EKS_CLUSTER" AWS_REGION="$AWS_DEFAULT_REGION" IMAGE_URI="$ECR_REGISTRY/$ECR_REPOSITORY:$CODEBUILD_BUILD_NUMBER" sh EKS/kubernetes/deploy.sh
+
       - echo "Build completed successfully."
 
 env:
   variables:
     ECR_REPOSITORY: "static-site"
+    EKS_CLUSTER: "eksCluster"

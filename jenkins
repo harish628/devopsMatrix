@@ -3,7 +3,9 @@ pipeline {
 
     parameters {
         choice(name: 'ACTION', choices: ['Initialize', 'Delete'], description: 'Initialize or delete the EKS cluster and its Kubernetes resources.')
-        string(name: 'EKS_CLUSTER', defaultValue: 'demo2', description: 'Name of the EKS cluster.')
+        string(name: 'EKS_CLUSTER', defaultValue: 'eksCluster', description: 'Name of the EKS cluster.')
+        string(name: 'AWS_REGION', defaultValue: 'ap-south-1', description: 'AWS region for the EKS cluster and ECR repository.')
+        string(name: 'NODEGROUP_NAME', defaultValue: 'eksCluster-nodegroup', description: 'Name of the EKS managed node group.')
     }
 
     options {
@@ -12,7 +14,6 @@ pipeline {
     }
 
     environment {
-        AWS_REGION      = 'ap-south-1'
         ECR_REPOSITORY  = 'static-site'
         K8S_NAMESPACE   = 'static-site'
         IMAGE_TAG       = "${BUILD_NUMBER}"
@@ -167,11 +168,11 @@ pipeline {
                     try {
                         sh '''#!/bin/sh
                             set -eu
-                            if eksctl get nodegroup --cluster "$EKS_CLUSTER" --region "$AWS_REGION" >/dev/null 2>&1; then
-                                echo "A node group already exists for $EKS_CLUSTER."
+                            if eksctl get nodegroup --cluster "$EKS_CLUSTER" --name "$NODEGROUP_NAME" --region "$AWS_REGION" >/dev/null 2>&1; then
+                                echo "Node group $NODEGROUP_NAME already exists for $EKS_CLUSTER."
                             else
                                     eksctl create nodegroup --cluster "$EKS_CLUSTER" --region "$AWS_REGION" \\
-                                        --name "${EKS_CLUSTER}-nodegroup" \\
+                                        --name "$NODEGROUP_NAME" \\
                                         --node-type c7i-flex.large --node-volume-size 28 \\
                                         --ssh-access --ssh-public-key keypair \\
                                         --managed --asg-access --external-dns-access \\
@@ -200,27 +201,10 @@ pipeline {
         //     steps {
         //         script {
         //             try {
-        //                 sh '''#!/bin/sh
-        //                     set -eu
-        //                     kubectl apply -f "$WORKSPACE/EKS/kubernetes/namespace.yaml"
-
-        //                     sed "s|IMAGE_PLACEHOLDER|${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY}:${IMAGE_TAG}|g" "$WORKSPACE/EKS/kubernetes/deployment.yaml" | kubectl apply -f -
-                            
-        //                     kubectl apply -n "$K8S_NAMESPACE" -f "$WORKSPACE/EKS/kubernetes/service.yaml"
-                            
-        //                     kubectl rollout status deployment/static-site -n "$K8S_NAMESPACE" --timeout=10m
-                            
-        //                     kubectl wait --for=condition=Ready pods --all -n "$K8S_NAMESPACE" --timeout=10m
-        //                     echo 'Pod status:'
-                            
-        //                     kubectl get pods -n "$K8S_NAMESPACE" -o wide
-                            
-        //                     kubectl wait --for=jsonpath='{.status.loadBalancer.ingress}' service --all -n "$K8S_NAMESPACE" --timeout=10m
-        //                     echo 'LoadBalancer service URL:'
-                            
-        //                     kubectl get services -n "$K8S_NAMESPACE" -o go-template='{{range .items}}{{if eq .spec.type "LoadBalancer"}}{{with index .status.loadBalancer.ingress 0}}{{if .hostname}}http://{{.hostname}}{{else}}http://{{.ip}}{{end}}{{"\\n"}}{{end}}{{end}}{{end}}'
-        //                 '''
-        //                 echo "\u001B[32mSUCCESS: Kubernetes resources are healthy and service URLs were printed.\u001B[0m"
+        //                 withEnv(["IMAGE_URI=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY}:${IMAGE_TAG}"]) {
+        //                     sh 'sh EKS/kubernetes/deploy.sh'
+        //                 }
+        //                 echo "\u001B[32mSUCCESS: Kubernetes resources are healthy.\u001B[0m"
         //             } catch (err) {
         //                 ansiColor('xterm') {
         //                     echo "\u001B[31mFAILURE: Kubernetes apply/health check failed: ${err}\u001B[0m"
