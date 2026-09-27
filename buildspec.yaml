@@ -39,10 +39,11 @@ phases:
       - docker push $ECR_REGISTRY/$ECR_REPOSITORY:$CODEBUILD_BUILD_NUMBER
 
       - echo "Verifying ECR image..."
-      - aws ecr describe-images \
-          --region $AWS_DEFAULT_REGION \
-          --repository-name $ECR_REPOSITORY \
-          --image-ids imageTag=$CODEBUILD_BUILD_NUMBER
+      - |
+        aws ecr describe-images \
+          --region "$AWS_DEFAULT_REGION" \
+          --repository-name "$ECR_REPOSITORY" \
+          --image-ids "imageTag=$CODEBUILD_BUILD_NUMBER"
 
       - echo "Build completed successfully."
 
