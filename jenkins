@@ -68,74 +68,74 @@ pipeline {
                 }
             }
         }
-        stage('Checkout and validate source') {
-            when { expression { params.ACTION == 'Initialize' } }
-            steps {
-                script {
-                    try {
-                        git branch: 'main', url: 'https://github.com/harish628/devopsMatrix.git'
-                        if (!fileExists('Dockerfile')) {
-                            error('Dockerfile is missing from the repository root.')
-                        }
-                        echo "\u001B[32mSUCCESS: Source checkout and Dockerfile validation passed.\u001B[0m"
-                    } catch (err) {
-                        echo "\u001B[31mFAILURE: Checkout/source validation failed: ${err}\u001B[0m"
-                        throw err
-                    }
-                }
-            }
-        }
+        // stage('Checkout and validate source') {
+        //     when { expression { params.ACTION == 'Initialize' } }
+        //     steps {
+        //         script {
+        //             try {
+        //                 git branch: 'main', url: 'https://github.com/harish628/devopsMatrix.git'
+        //                 if (!fileExists('Dockerfile')) {
+        //                     error('Dockerfile is missing from the repository root.')
+        //                 }
+        //                 echo "\u001B[32mSUCCESS: Source checkout and Dockerfile validation passed.\u001B[0m"
+        //             } catch (err) {
+        //                 echo "\u001B[31mFAILURE: Checkout/source validation failed: ${err}\u001B[0m"
+        //                 throw err
+        //             }
+        //         }
+        //     }
+        // }
 
-        stage('Build Docker image') {
-            when { expression { params.ACTION == 'Initialize' } }
-            steps {
-                script {
-                    try {
-                        withEnv(["ECR_REGISTRY=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"]) {
-                            sh 'docker build --pull -t "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" .'
-                            sh 'docker image inspect "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >/dev/null'
-                        }
-                        ansiColor('xterm') {
-                            echo "\u001B[32mSUCCESS: Docker image built and verified.\u001B[0m"
-                        }
-                    } catch (err) {
-                        ansiColor('xterm') {
-                            echo "\u001B[31mFAILURE: Docker build/verification failed: ${err}\u001B[0m"
-                        }
-                        throw err
-                    }
-                }
-            }
-        }
+        // stage('Build Docker image') {
+        //     when { expression { params.ACTION == 'Initialize' } }
+        //     steps {
+        //         script {
+        //             try {
+        //                 withEnv(["ECR_REGISTRY=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"]) {
+        //                     sh 'docker build --pull -t "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" .'
+        //                     sh 'docker image inspect "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >/dev/null'
+        //                 }
+        //                 ansiColor('xterm') {
+        //                     echo "\u001B[32mSUCCESS: Docker image built and verified.\u001B[0m"
+        //                 }
+        //             } catch (err) {
+        //                 ansiColor('xterm') {
+        //                     echo "\u001B[31mFAILURE: Docker build/verification failed: ${err}\u001B[0m"
+        //                 }
+        //                 throw err
+        //             }
+        //         }
+        //     }
+        // }
 
-        stage('Push image to ECR') {
-            when { expression { params.ACTION == 'Initialize' } }
-            steps {
-                script {
-                    try {
-                        withEnv(["ECR_REGISTRY=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"]) {
-                            sh '''#!/bin/sh
-                                set -eu
-                                aws sts get-caller-identity --region "$AWS_REGION" >/dev/null
-                                if aws ecr describe-repositories --region "$AWS_REGION" --repository-names "$ECR_REPOSITORY" >/dev/null 2>&1; then
-                                    echo "ECR repository $ECR_REPOSITORY already exists; skipping creation."
-                                else
-                                    echo "ECR repository $ECR_REPOSITORY does not exist; creating it."
-                                    aws ecr create-repository --region "$AWS_REGION" --repository-name "$ECR_REPOSITORY" >/dev/null
-                                fi
-                                aws ecr get-login-password --region "$AWS_REGION" | docker login --username AWS --password-stdin "$ECR_REGISTRY"
-                                docker push "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
-                                aws ecr describe-images --region "$AWS_REGION" --repository-name "$ECR_REPOSITORY" --image-ids imageTag="$IMAGE_TAG" >/dev/null
-                            '''
-                        }
-                        echo "\u001B[32mSUCCESS: Image push and ECR image lookup passed.\u001B[0m"
-                    } catch (err) {
-                        echo "\u001B[31mFAILURE: ECR push/validation failed: ${err}\u001B[0m"
-                        throw err
-                    }
-                }
-            }
-        }
+        // stage('Push image to ECR') {
+        //     when { expression { params.ACTION == 'Initialize' } }
+        //     steps {
+        //         script {
+        //             try {
+        //                 withEnv(["ECR_REGISTRY=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"]) {
+        //                     sh '''#!/bin/sh
+        //                         set -eu
+        //                         aws sts get-caller-identity --region "$AWS_REGION" >/dev/null
+        //                         if aws ecr describe-repositories --region "$AWS_REGION" --repository-names "$ECR_REPOSITORY" >/dev/null 2>&1; then
+        //                             echo "ECR repository $ECR_REPOSITORY already exists; skipping creation."
+        //                         else
+        //                             echo "ECR repository $ECR_REPOSITORY does not exist; creating it."
+        //                             aws ecr create-repository --region "$AWS_REGION" --repository-name "$ECR_REPOSITORY" >/dev/null
+        //                         fi
+        //                         aws ecr get-login-password --region "$AWS_REGION" | docker login --username AWS --password-stdin "$ECR_REGISTRY"
+        //                         docker push "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+        //                         aws ecr describe-images --region "$AWS_REGION" --repository-name "$ECR_REPOSITORY" --image-ids imageTag="$IMAGE_TAG" >/dev/null
+        //                     '''
+        //                 }
+        //                 echo "\u001B[32mSUCCESS: Image push and ECR image lookup passed.\u001B[0m"
+        //             } catch (err) {
+        //                 echo "\u001B[31mFAILURE: ECR push/validation failed: ${err}\u001B[0m"
+        //                 throw err
+        //             }
+        //         }
+        //     }
+        // }
 
         stage('Create EKS cluster') {
             when { expression { params.ACTION == 'Initialize' } }
@@ -195,41 +195,41 @@ pipeline {
             }
         }
 
-        stage('Apply Kubernetes manifests') {
-            when { expression { params.ACTION == 'Initialize' } }
-            steps {
-                script {
-                    try {
-                        sh '''#!/bin/sh
-                            set -eu
-                            kubectl apply -f "$WORKSPACE/EKS/kubernetes/namespace.yaml"
+        // stage('Apply Kubernetes manifests') {
+        //     when { expression { params.ACTION == 'Initialize' } }
+        //     steps {
+        //         script {
+        //             try {
+        //                 sh '''#!/bin/sh
+        //                     set -eu
+        //                     kubectl apply -f "$WORKSPACE/EKS/kubernetes/namespace.yaml"
 
-                            sed "s|IMAGE_PLACEHOLDER|${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY}:${IMAGE_TAG}|g" "$WORKSPACE/EKS/kubernetes/deployment.yaml" | kubectl apply -f -
+        //                     sed "s|IMAGE_PLACEHOLDER|${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY}:${IMAGE_TAG}|g" "$WORKSPACE/EKS/kubernetes/deployment.yaml" | kubectl apply -f -
                             
-                            kubectl apply -n "$K8S_NAMESPACE" -f "$WORKSPACE/EKS/kubernetes/service.yaml"
+        //                     kubectl apply -n "$K8S_NAMESPACE" -f "$WORKSPACE/EKS/kubernetes/service.yaml"
                             
-                            kubectl rollout status deployment/static-site -n "$K8S_NAMESPACE" --timeout=10m
+        //                     kubectl rollout status deployment/static-site -n "$K8S_NAMESPACE" --timeout=10m
                             
-                            kubectl wait --for=condition=Ready pods --all -n "$K8S_NAMESPACE" --timeout=10m
-                            echo 'Pod status:'
+        //                     kubectl wait --for=condition=Ready pods --all -n "$K8S_NAMESPACE" --timeout=10m
+        //                     echo 'Pod status:'
                             
-                            kubectl get pods -n "$K8S_NAMESPACE" -o wide
+        //                     kubectl get pods -n "$K8S_NAMESPACE" -o wide
                             
-                            kubectl wait --for=jsonpath='{.status.loadBalancer.ingress}' service --all -n "$K8S_NAMESPACE" --timeout=10m
-                            echo 'LoadBalancer service URL:'
+        //                     kubectl wait --for=jsonpath='{.status.loadBalancer.ingress}' service --all -n "$K8S_NAMESPACE" --timeout=10m
+        //                     echo 'LoadBalancer service URL:'
                             
-                            kubectl get services -n "$K8S_NAMESPACE" -o go-template='{{range .items}}{{if eq .spec.type "LoadBalancer"}}{{with index .status.loadBalancer.ingress 0}}{{if .hostname}}http://{{.hostname}}{{else}}http://{{.ip}}{{end}}{{"\\n"}}{{end}}{{end}}{{end}}'
-                        '''
-                        echo "\u001B[32mSUCCESS: Kubernetes resources are healthy and service URLs were printed.\u001B[0m"
-                    } catch (err) {
-                        ansiColor('xterm') {
-                            echo "\u001B[31mFAILURE: Kubernetes apply/health check failed: ${err}\u001B[0m"
-                        }
-                        throw err
-                    }
-                }
-            }
-        }
+        //                     kubectl get services -n "$K8S_NAMESPACE" -o go-template='{{range .items}}{{if eq .spec.type "LoadBalancer"}}{{with index .status.loadBalancer.ingress 0}}{{if .hostname}}http://{{.hostname}}{{else}}http://{{.ip}}{{end}}{{"\\n"}}{{end}}{{end}}{{end}}'
+        //                 '''
+        //                 echo "\u001B[32mSUCCESS: Kubernetes resources are healthy and service URLs were printed.\u001B[0m"
+        //             } catch (err) {
+        //                 ansiColor('xterm') {
+        //                     echo "\u001B[31mFAILURE: Kubernetes apply/health check failed: ${err}\u001B[0m"
+        //                 }
+        //                 throw err
+        //             }
+        //         }
+        //     }
+        // }
 
     }
 
