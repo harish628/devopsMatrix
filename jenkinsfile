@@ -69,74 +69,74 @@ pipeline {
                 }
             }
         }
-        stage('Checkout and validate source') {
-            when { expression { params.ACTION == 'Initialize' } }
-            steps {
-                script {
-                    try {
-                        git branch: 'main', url: 'https://github.com/harish628/devopsMatrix.git'
-                        if (!fileExists('Dockerfile')) {
-                            error('Dockerfile is missing from the repository root.')
-                        }
-                        echo "\u001B[32mSUCCESS: Source checkout and Dockerfile validation passed.\u001B[0m"
-                    } catch (err) {
-                        echo "\u001B[31mFAILURE: Checkout/source validation failed: ${err}\u001B[0m"
-                        throw err
-                    }
-                }
-            }
-        }
+        // stage('Checkout and validate source') {
+        //     when { expression { params.ACTION == 'Initialize' } }
+        //     steps {
+        //         script {
+        //             try {
+        //                 git branch: 'main', url: 'https://github.com/harish628/devopsMatrix.git'
+        //                 if (!fileExists('Dockerfile')) {
+        //                     error('Dockerfile is missing from the repository root.')
+        //                 }
+        //                 echo "\u001B[32mSUCCESS: Source checkout and Dockerfile validation passed.\u001B[0m"
+        //             } catch (err) {
+        //                 echo "\u001B[31mFAILURE: Checkout/source validation failed: ${err}\u001B[0m"
+        //                 throw err
+        //             }
+        //         }
+        //     }
+        // }
 
-        stage('Build Docker image') {
-            when { expression { params.ACTION == 'Initialize' } }
-            steps {
-                script {
-                    try {
-                        withEnv(["ECR_REGISTRY=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"]) {
-                            sh 'docker build --pull -t "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" .'
-                            sh 'docker image inspect "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >/dev/null'
-                        }
-                        ansiColor('xterm') {
-                            echo "\u001B[32mSUCCESS: Docker image built and verified.\u001B[0m"
-                        }
-                    } catch (err) {
-                        ansiColor('xterm') {
-                            echo "\u001B[31mFAILURE: Docker build/verification failed: ${err}\u001B[0m"
-                        }
-                        throw err
-                    }
-                }
-            }
-        }
+        // stage('Build Docker image') {
+        //     when { expression { params.ACTION == 'Initialize' } }
+        //     steps {
+        //         script {
+        //             try {
+        //                 withEnv(["ECR_REGISTRY=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"]) {
+        //                     sh 'docker build --pull -t "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" .'
+        //                     sh 'docker image inspect "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >/dev/null'
+        //                 }
+        //                 ansiColor('xterm') {
+        //                     echo "\u001B[32mSUCCESS: Docker image built and verified.\u001B[0m"
+        //                 }
+        //             } catch (err) {
+        //                 ansiColor('xterm') {
+        //                     echo "\u001B[31mFAILURE: Docker build/verification failed: ${err}\u001B[0m"
+        //                 }
+        //                 throw err
+        //             }
+        //         }
+        //     }
+        // }
 
-        stage('Push image to ECR') {
-            when { expression { params.ACTION == 'Initialize' } }
-            steps {
-                script {
-                    try {
-                        withEnv(["ECR_REGISTRY=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"]) {
-                            sh '''#!/bin/sh
-                                set -eu
-                                aws sts get-caller-identity --region "$AWS_REGION" >/dev/null
-                                if aws ecr describe-repositories --region "$AWS_REGION" --repository-names "$ECR_REPOSITORY" >/dev/null 2>&1; then
-                                    echo "ECR repository $ECR_REPOSITORY already exists; skipping creation."
-                                else
-                                    echo "ECR repository $ECR_REPOSITORY does not exist; creating it."
-                                    aws ecr create-repository --region "$AWS_REGION" --repository-name "$ECR_REPOSITORY" >/dev/null
-                                fi
-                                aws ecr get-login-password --region "$AWS_REGION" | docker login --username AWS --password-stdin "$ECR_REGISTRY"
-                                docker push "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
-                                aws ecr describe-images --region "$AWS_REGION" --repository-name "$ECR_REPOSITORY" --image-ids imageTag="$IMAGE_TAG" >/dev/null
-                            '''
-                        }
-                        echo "\u001B[32mSUCCESS: Image push and ECR image lookup passed.\u001B[0m"
-                    } catch (err) {
-                        echo "\u001B[31mFAILURE: ECR push/validation failed: ${err}\u001B[0m"
-                        throw err
-                    }
-                }
-            }
-        }
+        // stage('Push image to ECR') {
+        //     when { expression { params.ACTION == 'Initialize' } }
+        //     steps {
+        //         script {
+        //             try {
+        //                 withEnv(["ECR_REGISTRY=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"]) {
+        //                     sh '''#!/bin/sh
+        //                         set -eu
+        //                         aws sts get-caller-identity --region "$AWS_REGION" >/dev/null
+        //                         if aws ecr describe-repositories --region "$AWS_REGION" --repository-names "$ECR_REPOSITORY" >/dev/null 2>&1; then
+        //                             echo "ECR repository $ECR_REPOSITORY already exists; skipping creation."
+        //                         else
+        //                             echo "ECR repository $ECR_REPOSITORY does not exist; creating it."
+        //                             aws ecr create-repository --region "$AWS_REGION" --repository-name "$ECR_REPOSITORY" >/dev/null
+        //                         fi
+        //                         aws ecr get-login-password --region "$AWS_REGION" | docker login --username AWS --password-stdin "$ECR_REGISTRY"
+        //                         docker push "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+        //                         aws ecr describe-images --region "$AWS_REGION" --repository-name "$ECR_REPOSITORY" --image-ids imageTag="$IMAGE_TAG" >/dev/null
+        //                     '''
+        //                 }
+        //                 echo "\u001B[32mSUCCESS: Image push and ECR image lookup passed.\u001B[0m"
+        //             } catch (err) {
+        //                 echo "\u001B[31mFAILURE: ECR push/validation failed: ${err}\u001B[0m"
+        //                 throw err
+        //             }
+        //         }
+        //     }
+        // }
 
         stage('Create EKS cluster') {
             when { expression { params.ACTION == 'Initialize' } }
@@ -196,24 +196,24 @@ pipeline {
             }
         }
 
-        stage('Apply Kubernetes manifests') {
-            when { expression { params.ACTION == 'Initialize' } }
-            steps {
-                script {
-                    try {
-                        withEnv(["IMAGE_URI=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY}:${IMAGE_TAG}"]) {
-                            sh 'sh EKS/kubernetes/deploy.sh'
-                        }
-                        echo "\u001B[32mSUCCESS: Kubernetes resources are healthy.\u001B[0m"
-                    } catch (err) {
-                        ansiColor('xterm') {
-                            echo "\u001B[31mFAILURE: Kubernetes apply/health check failed: ${err}\u001B[0m"
-                        }
-                        throw err
-                    }
-                }
-            }
-        }
+        // stage('Apply Kubernetes manifests') {
+        //     when { expression { params.ACTION == 'Initialize' } }
+        //     steps {
+        //         script {
+        //             try {
+        //                 withEnv(["IMAGE_URI=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY}:${IMAGE_TAG}"]) {
+        //                     sh 'sh EKS/kubernetes/deploy.sh'
+        //                 }
+        //                 echo "\u001B[32mSUCCESS: Kubernetes resources are healthy.\u001B[0m"
+        //             } catch (err) {
+        //                 ansiColor('xterm') {
+        //                     echo "\u001B[31mFAILURE: Kubernetes apply/health check failed: ${err}\u001B[0m"
+        //                 }
+        //                 throw err
+        //             }
+        //         }
+        //     }
+        // }
 
     }
 
