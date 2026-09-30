@@ -51,8 +51,15 @@ jobs:
       # 6. Get image tag from CI
       - name: Set image
         run: |
-          IMAGE_URI="${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY}:${{ github.sha }}"
+          AWS_ACCOUNT_ID=$(aws sts get-caller-identity \
+            --query Account \
+            --output text)
+
+          IMAGE_URI="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY}:${{ github.sha }}"
+
           echo "IMAGE_URI=$IMAGE_URI" >> "$GITHUB_ENV"
+
+          echo "Image URI: $IMAGE_URI"
 
       # 7. Update Kubernetes deployment image
       - name: Update deployment image
