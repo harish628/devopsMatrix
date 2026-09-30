@@ -1,0 +1,86 @@
+name: DevOpsMatrix CD
+
+on:
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: ap-south-1
+  EKS_CLUSTER_NAME: eksCluster
+  ECR_REPOSITORY: static-site
+  K8S_NAMESPACE: static-site
+  DEPLOYMENT_NAME: static-site
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+
+      # 1. Checkout repository
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2. Authenticate to AWS using OIDC
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::840986438223:role/githubactionsRole
+          aws-region: ${{ env.AWS_REGION }}
+
+      # 3. Verify AWS identity
+      - name: Verify AWS identity
+        run: |
+          aws sts get-caller-identity
+
+      # 4. Configure kubectl for EKS
+      - name: Update kubeconfig
+        run: |
+          aws eks update-kubeconfig \
+            --region "$AWS_REGION" \
+            --name "$EKS_CLUSTER_NAME"
+
+      # 5. Verify EKS connection
+      - name: Verify EKS connection
+        run: |
+          kubectl get nodes
+
+      # 6. Get image tag from CI
+      - name: Set image
+        run: |
+          IMAGE_URI="${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY}:${{ github.sha }}"
+          echo "IMAGE_URI=$IMAGE_URI" >> "$GITHUB_ENV"
+
+      # 7. Update Kubernetes deployment image
+      - name: Update deployment image
+        run: |
+          kubectl set image deployment/$DEPLOYMENT_NAME \
+            nginx="$IMAGE_URI" \
+            -n "$K8S_NAMESPACE"
+
+      # 8. Apply Kubernetes manifests
+      - name: Apply Kubernetes manifests
+        run: |
+          kubectl apply \
+            -f EKS/kubernetes/deployment.yaml
+
+          kubectl apply \
+            -f EKS/kubernetes/service.yaml
+
+      # 9. Wait for rollout
+      - name: Verify rollout
+        run: |
+          kubectl rollout status \
+            deployment/$DEPLOYMENT_NAME \
+            -n "$K8S_NAMESPACE" \
+            --timeout=180s
+
+      # 10. Verify deployment
+      - name: Verify pods
+        run: |
+          kubectl get deployment -n "$K8S_NAMESPACE"
+          kubectl get pods -n "$K8S_NAMESPACE"
+          kubectl get service -n "$K8S_NAMESPACE"
