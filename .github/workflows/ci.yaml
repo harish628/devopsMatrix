@@ -1,6 +1,9 @@
-name: DevOpsMatrix CD
+name: DevOpsMatrix CI
 
 on:
+  push:
+    branches:
+      - main
   workflow_dispatch:
 
 permissions:
@@ -9,19 +12,16 @@ permissions:
 
 env:
   AWS_REGION: ap-south-1
-  EKS_CLUSTER_NAME: eksCluster
   ECR_REPOSITORY: static-site
-  K8S_NAMESPACE: static-site
-  DEPLOYMENT_NAME: static-site
 
 jobs:
-  deploy:
+  build-and-push:
     runs-on: ubuntu-latest
 
     steps:
 
-      # 1. Checkout repository
-      - name: Checkout code
+      # 1. Checkout source code
+      - name: Checkout source code
         uses: actions/checkout@v4
 
       # 2. Authenticate to AWS using OIDC
@@ -31,71 +31,70 @@ jobs:
           role-to-assume: arn:aws:iam::840986438223:role/githubactionsRole
           aws-region: ${{ env.AWS_REGION }}
 
-      # 3. Verify AWS identity
-      - name: Verify AWS identity
+      # 3. Verify AWS authentication
+      - name: Verify AWS authentication
         run: |
           aws sts get-caller-identity
 
-      # 4. Configure kubectl for EKS
-      - name: Update kubeconfig
-        run: |
-          aws eks update-kubeconfig \
-            --region "$AWS_REGION" \
-            --name "$EKS_CLUSTER_NAME"
-
-      # 5. Verify EKS connection
-      - name: Verify EKS connection
-        run: |
-          kubectl get nodes
-
-      # 6. Build image URI using the same Git commit SHA used by CI
-      - name: Set image
+      # 4. Get AWS Account ID
+      - name: Get AWS Account ID
         run: |
           AWS_ACCOUNT_ID=$(aws sts get-caller-identity \
             --query Account \
             --output text)
 
-          IMAGE_URI="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY}:${{ github.sha }}"
+          echo "AWS_ACCOUNT_ID=$AWS_ACCOUNT_ID" >> "$GITHUB_ENV"
 
-          echo "IMAGE_URI=$IMAGE_URI" >> "$GITHUB_ENV"
+      # 5. Validate ECR repository
+      - name: Validate ECR repository
+        run: |
+          if aws ecr describe-repositories \
+            --repository-names "$ECR_REPOSITORY" \
+            --region "$AWS_REGION" > /dev/null 2>&1
+          then
+            echo "ECR repository already exists"
+          else
+            echo "ECR repository does not exist. Creating..."
 
-          echo "Image URI: $IMAGE_URI"
+            aws ecr create-repository \
+              --repository-name "$ECR_REPOSITORY" \
+              --region "$AWS_REGION"
+          fi
 
-      # 7. Verify image exists in ECR
+      # 6. Login to ECR
+      - name: Login to Amazon ECR
+        run: |
+          aws ecr get-login-password \
+            --region "$AWS_REGION" |
+          docker login \
+            --username AWS \
+            --password-stdin \
+            "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com"
+
+      # 7. Build Docker image
+      - name: Build Docker image
+        run: |
+          docker build \
+            -t "$ECR_REPOSITORY:${GITHUB_SHA}" \
+            .
+
+      # 8. Tag Docker image
+      - name: Tag Docker image
+        run: |
+          docker tag \
+            "$ECR_REPOSITORY:${GITHUB_SHA}" \
+            "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPOSITORY:${GITHUB_SHA}"
+
+      # 9. Push Docker image to ECR
+      - name: Push Docker image
+        run: |
+          docker push \
+            "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPOSITORY:${GITHUB_SHA}"
+
+      # 10. Verify image
       - name: Verify image in ECR
         run: |
           aws ecr describe-images \
             --repository-name "$ECR_REPOSITORY" \
-            --image-ids imageTag="${{ github.sha }}" \
+            --image-ids imageTag="${GITHUB_SHA}" \
             --region "$AWS_REGION"
-
-      # 8. Create namespace and deploy Kubernetes resources
-      - name: Apply Kubernetes manifests
-        run: |
-          kubectl apply -f EKS/kubernetes/namespace.yaml
-          kubectl apply -f EKS/kubernetes/deployment.yaml
-          kubectl apply -f EKS/kubernetes/service.yaml    
-
-      # 9. Update deployment image
-      - name: Update deployment image
-        run: |
-          kubectl set image deployment/$DEPLOYMENT_NAME \
-            nginx="$IMAGE_URI" \
-            -n "$K8S_NAMESPACE"
-
-        # 10. Verify rollout
-      - name: Verify rollout
-        run: |
-          kubectl rollout status \
-            deployment/$DEPLOYMENT_NAME \
-            -n "$K8S_NAMESPACE" \
-            --timeout=180s    
-
-      # 11. Verify deployment
-      - name: Verify pods
-        run: |
-          kubectl get deployment -n "$K8S_NAMESPACE"
-          kubectl get pods -n "$K8S_NAMESPACE"
-          kubectl get service -n "$K8S_NAMESPACE"
-
-      # 12. Verify service endpoint

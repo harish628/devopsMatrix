@@ -1,7 +1,11 @@
 name: DevOpsMatrix CD
 
 on:
-  workflow_dispatch:
+  workflow_run:
+    workflows:
+      - "DevOpsMatrix CI"
+    types:
+      - completed
 
 permissions:
   id-token: write
@@ -16,13 +20,18 @@ env:
 
 jobs:
   deploy:
+
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+
     runs-on: ubuntu-latest
 
     steps:
 
-      # 1. Checkout repository
-      - name: Checkout code
+      # 1. Checkout the exact commit built by CI
+      - name: Checkout CI commit
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
 
       # 2. Authenticate to AWS using OIDC
       - name: Configure AWS credentials
@@ -36,7 +45,7 @@ jobs:
         run: |
           aws sts get-caller-identity
 
-      # 4. Configure kubectl for EKS
+      # 4. Configure kubectl
       - name: Update kubeconfig
         run: |
           aws eks update-kubeconfig \
@@ -48,36 +57,53 @@ jobs:
         run: |
           kubectl get nodes
 
-      # 6. Get image tag from CI
+      # 6. Build exact image URI created by CI
       - name: Set image
         run: |
           AWS_ACCOUNT_ID=$(aws sts get-caller-identity \
             --query Account \
             --output text)
 
-          IMAGE_URI="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY}:${{ github.sha }}"
+          IMAGE_URI="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY}:${{ github.event.workflow_run.head_sha }}"
 
           echo "IMAGE_URI=$IMAGE_URI" >> "$GITHUB_ENV"
 
           echo "Image URI: $IMAGE_URI"
 
-      # 7. Update Kubernetes deployment image
+      # 7. Verify image exists in ECR
+      - name: Verify image in ECR
+        run: |
+          aws ecr describe-images \
+            --repository-name "$ECR_REPOSITORY" \
+            --image-ids imageTag="${{ github.event.workflow_run.head_sha }}" \
+            --region "$AWS_REGION"
+
+      # 8. Create namespace
+      - name: Apply namespace
+        run: |
+          kubectl apply \
+            -f EKS/kubernetes/namespace.yaml
+
+      # 9. Apply deployment
+      - name: Apply deployment
+        run: |
+          kubectl apply \
+            -f EKS/kubernetes/deployment.yaml
+
+      # 10. Apply service
+      - name: Apply service
+        run: |
+          kubectl apply \
+            -f EKS/kubernetes/service.yaml
+
+      # 11. Update deployment image
       - name: Update deployment image
         run: |
           kubectl set image deployment/$DEPLOYMENT_NAME \
             nginx="$IMAGE_URI" \
             -n "$K8S_NAMESPACE"
 
-      # 8. Apply Kubernetes manifests
-      - name: Apply Kubernetes manifests
-        run: |
-          kubectl apply \
-            -f EKS/kubernetes/deployment.yaml
-
-          kubectl apply \
-            -f EKS/kubernetes/service.yaml
-
-      # 9. Wait for rollout
+      # 12. Verify rollout
       - name: Verify rollout
         run: |
           kubectl rollout status \
@@ -85,9 +111,14 @@ jobs:
             -n "$K8S_NAMESPACE" \
             --timeout=180s
 
-      # 10. Verify deployment
-      - name: Verify pods
+      # 13. Verify deployment
+      - name: Verify pods and service
         run: |
-          kubectl get deployment -n "$K8S_NAMESPACE"
-          kubectl get pods -n "$K8S_NAMESPACE"
-          kubectl get service -n "$K8S_NAMESPACE"
+          kubectl get deployment \
+            -n "$K8S_NAMESPACE"
+
+          kubectl get pods \
+            -n "$K8S_NAMESPACE"
+
+          kubectl get service \
+            -n "$K8S_NAMESPACE"
