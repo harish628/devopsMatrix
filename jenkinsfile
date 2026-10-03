@@ -18,7 +18,7 @@ pipeline {
         K8S_NAMESPACE   = 'static-site'
         IMAGE_TAG       = "${BUILD_NUMBER}"
     }
-78
+
     stages {
         stage('Delete EKS cluster and associated resources') {
             when {
@@ -171,13 +171,24 @@ pipeline {
                             if eksctl get nodegroup --cluster "$EKS_CLUSTER" --name "$NODEGROUP_NAME" --region "$AWS_REGION" >/dev/null 2>&1; then
                                 echo "Node group $NODEGROUP_NAME already exists for $EKS_CLUSTER."
                             else
-                                    eksctl create nodegroup --cluster "$EKS_CLUSTER" --region "$AWS_REGION" \\
-                                        --name "$NODEGROUP_NAME" \\
-                                        --node-type c7i-flex.large --node-volume-size 28 \\
-                                        --ssh-access --ssh-public-key keypair \\
-                                        --managed --asg-access --external-dns-access \\
-                                        --full-ecr-access --appmesh-access --alb-ingress-access \\
-                                        --nodes 2 --nodes-min 1 --nodes-max 3   \\--security-group-ids sg-05c0dd4883302a620
+                                eksctl create nodegroup \
+                                    --cluster "$EKS_CLUSTER" \
+                                    --region "$AWS_REGION" \
+                                    --name "$NODEGROUP_NAME" \
+                                    --node-type c7i-flex.large \
+                                    --node-volume-size 28 \
+                                    --ssh-access \
+                                    --ssh-public-key keypair \
+                                    --managed \
+                                    --asg-access \
+                                    --external-dns-access \
+                                    --full-ecr-access \
+                                    --appmesh-access \
+                                    --alb-ingress-access \
+                                    --nodes 2 \
+                                    --nodes-min 1 \
+                                    --nodes-max 3 \
+                                    --security-group-ids sg-05c0dd4883302a620
                             fi
                             aws eks update-kubeconfig --region "$AWS_REGION" --name "$EKS_CLUSTER"
                             if ! command -v kubectl >/dev/null 2>&1; then
@@ -185,7 +196,7 @@ pipeline {
                                 exit 127
                             fi
                             kubectl wait --for=condition=Ready nodes --all --timeout=30m
-                            kubectl get nodes 
+                            kubectl get nodes
                         '''
                         echo "\u001B[32mSUCCESS: EKS node group is healthy.\u001B[0m"
                     } catch (err) {
