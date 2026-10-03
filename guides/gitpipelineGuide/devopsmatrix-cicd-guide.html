@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>DevOpsMatrix CI/CD User Guide</title>
+<style>
+:root{--bg:#fff;--fg:#1e293b;--mut:#64748b;--card:#f1f5f9;--bd:#cbd5e1;--ac:#2563eb;--ok:#16a34a;--code:#0f172a;--codefg:#e2e8f0;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0b1220;--fg:#e2e8f0;--mut:#94a3b8;--card:#141d30;--bd:#2b3a55;--ac:#60a5fa;--ok:#4ade80;--code:#050910}}
+:root[data-theme="dark"]{--bg:#0b1220;--fg:#e2e8f0;--mut:#94a3b8;--card:#141d30;--bd:#2b3a55;--ac:#60a5fa;--ok:#4ade80;--code:#050910}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{background:var(--bg);color:var(--fg);font:16px/1.6 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;margin:0}
+main{max-width:860px;margin:0 auto;padding:24px 18px 64px}
+h1{font-size:2rem;margin:.2em 0}h2{margin-top:2.2em;font-size:1.4rem}h3{margin-top:1.4em;font-size:1.05rem}
+.sub{color:var(--mut)}
+.step{display:inline-block;background:var(--ac);color:#fff;border-radius:99px;padding:2px 12px;font-size:.8rem;margin-right:8px;vertical-align:middle}
+pre{background:var(--code);color:var(--codefg);padding:14px;border-radius:8px;overflow-x:auto;font-size:.82rem;line-height:1.5}
+code{font-family:Consolas,Menlo,monospace}p code,li code,td code{background:var(--card);padding:1px 5px;border-radius:4px;font-size:.85em}
+.note{background:var(--card);border:1px solid var(--bd);border-radius:8px;padding:10px 14px;margin:14px 0}
+figure{margin:18px 0;background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:10px}figure svg{width:100%;height:auto;display:block}
+figcaption{color:var(--mut);font-size:.85rem;text-align:center;margin-top:6px}
+.tw{overflow-x:auto}table{border-collapse:collapse;width:100%;font-size:.9rem}th,td{border:1px solid var(--bd);padding:8px;text-align:left;vertical-align:top}th{background:var(--card)}
+li{margin:4px 0}
+</style></head><body><main>
+
+<h1>DevOpsMatrix CI/CD User Guide</h1>
+<p class="sub">Set up GitHub Actions → Amazon ECR → Amazon EKS from scratch. Written for new team members. Region: <code>ap-south-1</code>.</p>
+
+<figure>
+<svg viewBox="0 0 800 150" font-family="sans-serif" font-size="13" role="img" aria-label="Pipeline architecture">
+<defs><marker id="a" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0L8,4L0,8z" fill="#2563eb"/></marker></defs>
+<g stroke="#94a3b8" fill="#f1f5f9"><rect x="10" y="40" width="120" height="70" rx="10"/><rect x="170" y="40" width="130" height="70" rx="10" fill="#dbeafe"/><rect x="340" y="40" width="110" height="70" rx="10"/><rect x="490" y="40" width="130" height="70" rx="10" fill="#dcfce7"/><rect x="660" y="40" width="130" height="70" rx="10"/></g>
+<g fill="#0f172a" text-anchor="middle"><text x="70" y="70" font-weight="bold">Push to</text><text x="70" y="88">main</text>
+<text x="235" y="70" font-weight="bold">CI workflow</text><text x="235" y="88">build + push</text>
+<text x="395" y="70" font-weight="bold">Amazon ECR</text><text x="395" y="88">image:SHA</text>
+<text x="555" y="70" font-weight="bold">CD workflow</text><text x="555" y="88">on CI success</text>
+<text x="725" y="70" font-weight="bold">Amazon EKS</text><text x="725" y="88">rolling deploy</text></g>
+<g stroke="#2563eb" stroke-width="2" marker-end="url(#a)"><path d="M130 75H166"/><path d="M300 75H336"/><path d="M450 75H486"/><path d="M620 75H656"/></g>
+<text x="400" y="138" text-anchor="middle" fill="#64748b">Both workflows sign in to AWS via OIDC (no stored access keys)</text>
+</svg><figcaption>Figure 1 – End-to-end flow</figcaption></figure>
+
+<h2>Prerequisites</h2>
+<ul><li>GitHub repo with admin access; AWS account with permission to create IAM roles, ECR and EKS resources</li>
+<li>An existing EKS cluster (<code>eksCluster</code>) and the AWS CLI configured locally for one-time setup</li>
+<li><code>kubectl</code> installed locally; a <code>Dockerfile</code> in the repo root</li></ul>
+
+<h2><span class="step">1</span>Repository layout</h2>
+<pre>repo/
+├── .github/workflows/
+│   ├── ci.yaml
+│   └── cd.yaml
+├── Dockerfile
+└── EKS/kubernetes/
+    ├── namespace.yaml
+    ├── deployment.yaml
+    └── service.yaml</pre>
+
+<h2><span class="step">2</span>One-time AWS setup</h2>
+<h3>2.1 Create the GitHub OIDC provider</h3>
+<p>AWS Console → IAM → Identity providers → Add provider → <b>OpenID Connect</b>. Provider URL <code>https://token.actions.githubusercontent.com</code>, audience <code>sts.amazonaws.com</code>.</p>
+<h3>2.2 Create the IAM role <code>githubactionsRole</code></h3>
+<p>Trust policy (replace the placeholders):</p>
+<pre>{
+  "Version": "2012-10-17",
+  "Statement": [{
+    "Effect": "Allow",
+    "Principal": {"Federated": "arn:aws:iam::&lt;ACCOUNT_ID&gt;:oidc-provider/token.actions.githubusercontent.com"},
+    "Action": "sts:AssumeRoleWithWebIdentity",
+    "Condition": {
+      "StringEquals": {"token.actions.githubusercontent.com:aud": "sts.amazonaws.com"},
+      "StringLike":   {"token.actions.githubusercontent.com:sub": "repo:&lt;ORG&gt;/&lt;REPO&gt;:ref:refs/heads/main"}
+    }
+  }]
+}</pre>
+<p>Attach permissions: ECR push/pull (for example <code>AmazonEC2ContainerRegistryPowerUser</code>) plus <code>eks:DescribeCluster</code>.</p>
+<h3>2.3 Give the role access to the cluster</h3>
+<pre>aws eks create-access-entry --cluster-name eksCluster --region ap-south-1 \
+  --principal-arn arn:aws:iam::&lt;ACCOUNT_ID&gt;:role/githubactionsRole
+
+aws eks associate-access-policy --cluster-name eksCluster --region ap-south-1 \
+  --principal-arn arn:aws:iam::&lt;ACCOUNT_ID&gt;:role/githubactionsRole \
+  --policy-arn arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy \
+  --access-scope type=cluster</pre>
+<div class="note">Without this step, CD fails at <code>kubectl get nodes</code> with "You must be logged in to the server (Unauthorized)".</div>
+
+<h2><span class="step">3</span>Kubernetes manifests</h2>
+<p>The container name in <code>deployment.yaml</code> must be <code>nginx</code>, because CD runs <code>kubectl set image ... nginx=...</code>.</p>
+<pre># namespace.yaml
+apiVersion: v1
+kind: Namespace
+metadata: {name: static-site}
+---
+# deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: static-site, namespace: static-site}
+spec:
+  replicas: 2
+  selector: {matchLabels: {app: static-site}}
+  template:
+    metadata: {labels: {app: static-site}}
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:stable   # replaced by CD with the ECR image
+          ports: [{containerPort: 80}]
+---
+# service.yaml
+apiVersion: v1
+kind: Service
+metadata: {name: static-site, namespace: static-site}
+spec:
+  type: LoadBalancer
+  selector: {app: static-site}
+  ports: [{port: 80, targetPort: 80}]</pre>
+<p class="sub">(Each document goes in its own file.)</p>
+
+<h2><span class="step">4</span>CI workflow – <code>.github/workflows/ci.yaml</code></h2>
+<p>Builds the image, tags it with the commit SHA and pushes it to ECR.</p>
+<pre>name: DevOpsMatrix CI
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: ap-south-1
+  ECR_REPOSITORY: static-site
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::&lt;ACCOUNT_ID&gt;:role/githubactionsRole
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Get account ID and ECR registry
+        run: |
+          ID=$(aws sts get-caller-identity --query Account --output text)
+          echo "REGISTRY=$ID.dkr.ecr.$AWS_REGION.amazonaws.com" &gt;&gt; "$GITHUB_ENV"
+
+      - name: Create ECR repository if missing
+        run: |
+          aws ecr describe-repositories --repository-names "$ECR_REPOSITORY" --region "$AWS_REGION" &gt;/dev/null 2&gt;&amp;1 \
+          || aws ecr create-repository --repository-name "$ECR_REPOSITORY" --region "$AWS_REGION"
+
+      - name: Login to ECR
+        run: |
+          aws ecr get-login-password --region "$AWS_REGION" |
+          docker login --username AWS --password-stdin "$REGISTRY"
+
+      - name: Build and push image
+        run: |
+          docker build -t "$REGISTRY/$ECR_REPOSITORY:${GITHUB_SHA}" .
+          docker push "$REGISTRY/$ECR_REPOSITORY:${GITHUB_SHA}"
+
+      - name: Verify image in ECR
+        run: |
+          aws ecr describe-images --repository-name "$ECR_REPOSITORY" \
+            --image-ids imageTag="${GITHUB_SHA}" --region "$AWS_REGION"</pre>
+
+<h2><span class="step">5</span>CD workflow – <code>.github/workflows/cd.yaml</code></h2>
+<p>Starts automatically when CI succeeds and deploys the exact commit CI built.</p>
+<pre>name: DevOpsMatrix CD
+
+on:
+  workflow_run:
+    workflows: ["DevOpsMatrix CI"]
+    types: [completed]
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: ap-south-1
+  EKS_CLUSTER_NAME: eksCluster
+  ECR_REPOSITORY: static-site
+  K8S_NAMESPACE: static-site
+  DEPLOYMENT_NAME: static-site
+
+jobs:
+  deploy:
+    if: ${{ github.event.workflow_run.conclusion == 'success' &amp;&amp; github.event.workflow_run.head_branch == 'main' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::&lt;ACCOUNT_ID&gt;:role/githubactionsRole
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Connect to EKS
+        run: |
+          aws eks update-kubeconfig --region "$AWS_REGION" --name "$EKS_CLUSTER_NAME"
+          kubectl get nodes
+
+      - name: Set image URI and verify it exists
+        run: |
+          ID=$(aws sts get-caller-identity --query Account --output text)
+          SHA=${{ github.event.workflow_run.head_sha }}
+          echo "IMAGE_URI=$ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPOSITORY:$SHA" &gt;&gt; "$GITHUB_ENV"
+          aws ecr describe-images --repository-name "$ECR_REPOSITORY" \
+            --image-ids imageTag="$SHA" --region "$AWS_REGION"
+
+      - name: Apply manifests
+        run: |
+          kubectl apply -f EKS/kubernetes/namespace.yaml
+          kubectl apply -f EKS/kubernetes/deployment.yaml
+          kubectl apply -f EKS/kubernetes/service.yaml
+
+      - name: Update image and wait for rollout
+        run: |
+          kubectl set image deployment/$DEPLOYMENT_NAME nginx="$IMAGE_URI" -n "$K8S_NAMESPACE"
+          kubectl rollout status deployment/$DEPLOYMENT_NAME -n "$K8S_NAMESPACE" --timeout=180s
+
+      - name: Verify
+        run: kubectl get deployment,pods,service -n "$K8S_NAMESPACE"</pre>
+<div class="note"><b>Important:</b> <code>workflow_run</code> workflows only run from the default branch, so <code>cd.yaml</code> must be merged into <code>main</code> before it will trigger.</div>
+
+<h2><span class="step">6</span>Run and verify</h2>
+<pre>git add .github/workflows Dockerfile EKS
+git commit -m "Add CI/CD pipelines"
+git push origin main</pre>
+<p>Open <b>GitHub repo → Actions</b>. You should see CI start first, then CD start on its own once CI is green:</p>
+<figure>
+<svg viewBox="0 0 800 250" font-family="sans-serif" font-size="13" role="img" aria-label="GitHub Actions tab illustration">
+<rect x="1" y="1" width="798" height="248" rx="10" fill="#ffffff" stroke="#cbd5e1"/>
+<rect x="1" y="1" width="798" height="42" rx="10" fill="#f1f5f9" stroke="#cbd5e1"/>
+<g fill="#0f172a"><text x="20" y="27" font-weight="bold">Code</text><text x="80" y="27">Issues</text><text x="140" y="27">Pull requests</text><text x="255" y="27" font-weight="bold" fill="#2563eb">Actions</text></g>
+<line x1="250" y1="41" x2="315" y2="41" stroke="#2563eb" stroke-width="3"/>
+<g fill="#0f172a"><text x="20" y="75" font-weight="bold">Workflows</text><text x="20" y="100" fill="#2563eb">DevOpsMatrix CI</text><text x="20" y="122">DevOpsMatrix CD</text></g>
+<text x="230" y="75" font-weight="bold" fill="#0f172a">All workflow runs</text>
+<g stroke="#e2e8f0"><line x1="230" y1="90" x2="780" y2="90"/><line x1="230" y1="140" x2="780" y2="140"/><line x1="230" y1="190" x2="780" y2="190"/></g>
+<circle cx="245" cy="115" r="9" fill="#16a34a"/><path d="M240 115l4 4 7-8" stroke="#fff" stroke-width="2" fill="none"/>
+<text x="265" y="112" fill="#0f172a" font-weight="bold">DevOpsMatrix CD</text><text x="265" y="130" fill="#64748b">Triggered by workflow_run · main · 1m 20s</text>
+<circle cx="245" cy="165" r="9" fill="#16a34a"/><path d="M240 165l4 4 7-8" stroke="#fff" stroke-width="2" fill="none"/>
+<text x="265" y="162" fill="#0f172a" font-weight="bold">DevOpsMatrix CI</text><text x="265" y="180" fill="#64748b">Triggered by push · main · 52s</text>
+<text x="230" y="225" fill="#64748b">Illustration – your run list will show your own commit messages.</text>
+</svg><figcaption>Figure 2 – Expected result in the Actions tab (illustrative)</figcaption></figure>
+
+<p>Then confirm the app is live:</p>
+<pre>aws eks update-kubeconfig --region ap-south-1 --name eksCluster
+kubectl get pods,svc -n static-site
+# open the EXTERNAL-IP / hostname of the service in a browser</pre>
+
+<h2>Troubleshooting</h2>
+<div class="tw"><table>
+<tr><th>Symptom</th><th>Likely cause and fix</th></tr>
+<tr><td>"DevOpsMatrix CI" missing in Actions</td><td>Workflow file not on <code>main</code>, or <code>name:</code> inside the file is wrong. Check each file's <code>name:</code> line.</td></tr>
+<tr><td>Not authorized to perform sts:AssumeRoleWithWebIdentity</td><td>Trust policy <code>sub</code> doesn't match repo/branch, or <code>id-token: write</code> permission is missing.</td></tr>
+<tr><td>CD never starts</td><td><code>cd.yaml</code> isn't on <code>main</code>, or the CI workflow name in <code>workflows:</code> doesn't match exactly.</td></tr>
+<tr><td><code>kubectl get nodes</code> Unauthorized</td><td>Create the EKS access entry for the role (step 2.3).</td></tr>
+<tr><td>Image not found in ECR</td><td>CI failed or pushed a different SHA. Check CI logs for the push step.</td></tr>
+<tr><td>Rollout times out</td><td>Pod can't pull the image (ECR permissions on the node role) or the container crashes. Run <code>kubectl describe pod</code> and <code>kubectl logs</code>.</td></tr>
+<tr><td><code>set image</code> fails: container not found</td><td>Container name in <code>deployment.yaml</code> isn't <code>nginx</code>.</td></tr>
+</table></div>
+
+<h2>Next steps toward production</h2>
+<ul><li>Add tests and a Trivy image scan to CI</li><li>Add a staging environment and a manual approval before prod</li><li>Add <code>kubectl rollout undo</code> on failure, resource limits and health probes</li><li>Manage ECR, EKS and IAM with Terraform; consider ArgoCD for GitOps</li></ul>
+</main></body></html>

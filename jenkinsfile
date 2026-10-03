@@ -18,7 +18,7 @@ pipeline {
         K8S_NAMESPACE   = 'static-site'
         IMAGE_TAG       = "${BUILD_NUMBER}"
     }
-
+78
     stages {
         stage('Delete EKS cluster and associated resources') {
             when {
@@ -177,7 +177,7 @@ pipeline {
                                         --ssh-access --ssh-public-key keypair \\
                                         --managed --asg-access --external-dns-access \\
                                         --full-ecr-access --appmesh-access --alb-ingress-access \\
-                                        --nodes 2 --nodes-min 1 --nodes-max 3
+                                        --nodes 2 --nodes-min 1 --nodes-max 3   --security-group-ids sg-05c0dd4883302a620
                             fi
                             aws eks update-kubeconfig --region "$AWS_REGION" --name "$EKS_CLUSTER"
                             if ! command -v kubectl >/dev/null 2>&1; then
